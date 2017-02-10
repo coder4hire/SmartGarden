@@ -1,0 +1,1 @@
+You should set LINARO_PATH environment variable to location of LINARO toolset if you want to use it under Windows
