@@ -1,0 +1,7 @@
+*/.vs/
+*.opendb
+*.db
+*.filters
+*.user
+*/Release
+*/*/Release

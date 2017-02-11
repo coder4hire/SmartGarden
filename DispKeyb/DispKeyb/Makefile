@@ -5,13 +5,14 @@ SRC_FILES = $(wildcard *.cpp)
 OBJECTS = $(addsuffix .o,$(basename $(SRC_FILES)))
 PATH:=$(PATH):$(LINARO_PATH)/bin
 CC=arm-linux-gnueabihf-gcc.exe
+LD=arm-linux-gnueabihf-g++.exe
 CFLAGS=-I./include
 LIB_FLAGS=-Llib -lwiringPi -lwiringPiDev
 
 all: prep DispKeyb
 	
 clean:
-	rm -rf $(OUT_DIR)/DispKeyb bin/*.o
+	erase /Q $(OUT_DIR)\*.*
 
 prep:
 #	-mkdir bin
@@ -20,4 +21,4 @@ prep:
 	$(CC) -c -o $(OUT_DIR)/$@ $(addsuffix .cpp,$(basename $@)) $(CFLAGS)
 
 DispKeyb: $(OBJECTS)
-	arm-linux-gnueabihf-gcc.exe -o $(OUT_DIR)/DispKeyb $(addprefix $(OUT_DIR)/,$(OBJECTS)) $(LIB_FLAGS)
+	$(LD) -o $(OUT_DIR)/DispKeyb $(addprefix $(OUT_DIR)/,$(OBJECTS)) $(LIB_FLAGS)
