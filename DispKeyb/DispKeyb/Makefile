@@ -7,7 +7,7 @@ PATH:=$(PATH):$(LINARO_PATH)/bin
 CC=arm-linux-gnueabihf-gcc.exe
 LD=arm-linux-gnueabihf-g++.exe
 CFLAGS=-I./include
-LIB_FLAGS=-Llib -lwiringPi -lwiringPiDev
+LIB_FLAGS=-Llib -LLinuxLibs -lwiringPi -lwiringPiDev -lpthread
 
 all: prep DispKeyb
 	
