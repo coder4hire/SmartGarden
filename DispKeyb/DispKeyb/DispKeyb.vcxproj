@@ -51,7 +51,7 @@
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeIncludeSearchPath>include;.;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
     <ExecutablePath>$(PATH);$(LINARO_PATH)\bin</ExecutablePath>
-    <IncludePath>$(LINARO_PATH)\arm-linux-gnueabihf\libc\usr\include</IncludePath>
+    <IncludePath>$(LINARO_PATH)\arm-linux-gnueabihf\libc\usr\include;include</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
@@ -59,6 +59,7 @@
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DomoticzInterface.cpp" />
     <ClCompile Include="LcdDisplay.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -66,6 +67,7 @@
     <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DomoticzInterface.h" />
     <ClInclude Include="LcdDisplay.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

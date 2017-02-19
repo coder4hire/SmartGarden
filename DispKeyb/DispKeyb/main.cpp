@@ -2,10 +2,13 @@
 #include "wiringPi.h"
 #include "stdio.h"
 #include <unistd.h>
+#include "DomoticzInterface.h"
 //unsigned int sleep(unsigned int seconds);
 
 int main()
 {
+	//CDomoticzInterface iDM("192.168.2.50",8080);
+
 	wiringPiSetup();
 	CLcdDisplay lcd(4,20,CLcdDisplay::BITS_4, 25, 24, 23, 7, 21, 22, 0, 0, 0, 0);;
 
@@ -32,6 +35,11 @@ int main()
 		}
 		//lcd.CursorBlink(true);
 		usleep(2000000);
+
+		/*if (getchar() == 'a')
+		{
+			iDM.SendSwitchCommand(8, true);
+		}*/
 	}
 
 	return 0;
