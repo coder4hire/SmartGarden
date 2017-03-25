@@ -3,14 +3,18 @@
 #include "stdio.h"
 #include <unistd.h>
 #include "DomoticzInterface.h"
+#include "main.h"
 //unsigned int sleep(unsigned int seconds);
+
+void ConfigurePins();
 
 int main()
 {
-	//CDomoticzInterface iDM("192.168.2.50",8080);
+	CDomoticzInterface iDM("192.168.2.50",8080);
 
 	wiringPiSetup();
-	CLcdDisplay lcd(4,20,CLcdDisplay::BITS_4, 25, 24, 23, 7, 21, 22, 0, 0, 0, 0);;
+	CLcdDisplay lcd(4,20,CLcdDisplay::BITS_4, 25, 24, 23, 7, 21, 22, 0, 0, 0, 0);
+	ConfigurePins();
 
 	FILE* fp = NULL;
 	while (true)
@@ -34,13 +38,25 @@ int main()
 			fclose(fp);
 		}
 		//lcd.CursorBlink(true);
-		usleep(2000000);
+		usleep(200000);
 
-		/*if (getchar() == 'a')
+		char c;
+		printf("Cmd:");
+		scanf("%c", &c);
+		if (c == 'a')
 		{
-			iDM.SendSwitchCommand(8, true);
-		}*/
+			printf("On command is sent\n");
+			if (!iDM.SendSwitchCommand(9, true))
+			{
+				printf("Error sending command.\n");
+			}
+		}
 	}
 
 	return 0;
+}
+
+void ConfigurePins()
+{
+	pinMode(2, OUTPUT);
 }

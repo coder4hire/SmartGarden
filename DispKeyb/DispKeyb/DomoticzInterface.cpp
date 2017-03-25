@@ -19,7 +19,7 @@ CDomoticzInterface::~CDomoticzInterface()
 bool CDomoticzInterface::SendSwitchCommand(int idx, bool isEnabled)
 {
 	/* Now specify the POST data */
-	std::string str = domoticzIP+ "/json.htm?type=command&param=switchlight&idx=";
+	std::string str = "/json.htm?type=command&param=switchlight&idx=";
 	char strIdx[32];
 	sprintf(strIdx, "%d", idx);
 
@@ -59,6 +59,7 @@ std::string CDomoticzInterface::SendHTTPRequest(std::string& request)
 	}
 	
 	std::string getQuery = BuildGetQuery(domoticzIP, request);
+	printf("%s", getQuery.c_str());
 
 	//Send the query to the server
 	int sent = 0;

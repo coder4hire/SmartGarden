@@ -69,6 +69,7 @@
   <ItemGroup>
     <ClInclude Include="DomoticzInterface.h" />
     <ClInclude Include="LcdDisplay.h" />
+    <ClInclude Include="main.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
