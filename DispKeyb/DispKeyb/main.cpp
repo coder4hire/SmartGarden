@@ -13,7 +13,7 @@ int main()
 	CDomoticzInterface iDM("192.168.2.50",8080);
 
 	wiringPiSetup();
-	CLcdDisplay lcd(4,20,CLcdDisplay::BITS_4, 25, 24, 23, 7, 21, 22, 0, 0, 0, 0);
+	CLcdDisplay lcd(4,20,CLcdDisplay::BITS_4,29,28,21,7,27,26, 0, 0, 0, 0);
 	ConfigurePins();
 
 	FILE* fp = NULL;
@@ -40,17 +40,17 @@ int main()
 		//lcd.CursorBlink(true);
 		usleep(200000);
 
-		char c;
-		printf("Cmd:");
-		scanf("%c", &c);
-		if (c == 'a')
-		{
-			printf("On command is sent\n");
-			if (!iDM.SendSwitchCommand(9, true))
-			{
-				printf("Error sending command.\n");
-			}
-		}
+		//char c;
+		//printf("Cmd:");
+		//scanf("%c", &c);
+		//if (c == 'a')
+		//{
+		//	printf("On command is sent\n");
+		//	if (!iDM.SendSwitchCommand(9, true))
+		//	{
+		//		printf("Error sending command.\n");
+		//	}
+		//}
 	}
 
 	return 0;
