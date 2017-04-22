@@ -59,17 +59,21 @@
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DomoticzDataParser.cpp" />
     <ClCompile Include="DomoticzInterface.cpp" />
     <ClCompile Include="LcdDisplay.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MainMenu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DomoticzDataParser.h" />
     <ClInclude Include="DomoticzInterface.h" />
     <ClInclude Include="LcdDisplay.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="MainMenu.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
