@@ -1,0 +1,19 @@
+LCD:
+LCD_Jack Name	RPI_Jack wiringPI
+1 	GND
+2	+5V
+3	N/C (Key)
+4	RS	40	29
+5	E	38	28
+6	DB4	29	21
+7	DB5	7	7
+8	DB6	36	27
+9	DB7	32	26
+10	LED_GND 8	15
+
+GPIO outs:
+Name		RPI_Jack wiringPI
+1 (Timed)	26	11
+2		35	24
+3 (Timed)	33	23
+4		31	22
