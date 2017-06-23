@@ -75,4 +75,10 @@ void ConfigurePins()
 	pullUpDnControl(PINKEY_OK, PUD_UP);
 	pullUpDnControl(PINKEY_CANCEL, PUD_UP);
 	pullUpDnControl(PINKEY_ABORT, PUD_UP);
+
+	// GPIO Pins
+	pinMode(30, INPUT);
+	pinMode(31, INPUT);
+	pullUpDnControl(30, PUD_DOWN);
+	pullUpDnControl(31, PUD_DOWN);
 }

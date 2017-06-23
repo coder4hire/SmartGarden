@@ -11,9 +11,53 @@ LCD_Jack Name	RPI_Jack wiringPI
 9	DB7	32	26
 10	LED_GND 8	15
 
-GPIO outs:
-Name		RPI_Jack wiringPI
-1 (Timed)	26	11
-2		35	24
-3 (Timed)	33	23
-4		31	22
+KEYBOARD:
+KBD_Jack Name	RPI_Jack wiringPI
+1 	GND
+2	N/C (Key)
+3	N/C
+4	N/C
+5	KEY1	5	9
+6	KEY2	18	5
+7	KEY3	3	12
+8	KEY4	16	4
+9	KEY5	12	1
+10	+5V
+
+GPIO outputs:
+Name		RPI_Jack wiringPI BCM
+1 (Timed)	26	 11       21
+2		35	 24       10
+3 (Timed)	33	 23       9
+4		31	 22       8
+
+GPIO inputs:
+Name		RPI_Jack wiringPI BCM
+1		10	 16	  14
+2		24	 10	  67
+
+
+Orange PI pins usage
+
+BCM	wPi	Name 		Descr.	Physical	Descr.	Name 		wPi	BCM 
+---------------------------------------------------------------------------------------------
+    	     	     3.3v 	---	1	2	---	 5v       	     	     
+12	8	    SDA.0 	KEYS	3	4	---	 5V       	     	     
+11	9	    SCL.0 	KEYS	5	6	---	 0v       	     	     
+6	7	   GPIO.7 	DISPLAY	7	8	DISPLAY	 TxD3     	15	13
+     	     	       0v 	---	9	10	IN1	 RxD3     	16	14
+1	0	     RxD2 		11	12	KEYS	 GPIO.1   	1	110
+0	2	     TxD2 		13	14	---	 0v       	     	     
+3	3	     CTS2 		15	16	KEYS	 GPIO.4   	4	68
+     	     	     3.3v 	---	17	18	KEYS	 GPIO.5   	5	71
+64	12	     MOSI 		19	20	---	 0v       	     	     
+65	13	     MISO 		21	22		 RTS2     	6	2
+66	14	     SCLK 		23	24	IN2	 CE0      	10	67
+     	     	       0v 	---	25	26	OUT1	 GPIO.11  	11	21
+19	30	    SDA.1 		27	28		 SCL.1    	31	18
+7	21	  GPIO.21 	DISPLAY	29	30	---	 0v       	     	     
+8	22	  GPIO.22 	OUT4	31	32	DISPLAY	 RTS1     	26	200
+9	23	  GPIO.23 	OUT3	33	34	---	 0v       	     	     
+10	24	  GPIO.24 	OUT2	35	36	DISPLAY	 CTS1     	27	201
+20	25	  GPIO.25 	1-WIRE	37	38	DISPLAY	 TxD1     	28	198
+     	     	       0v 	---	39	40	DISPLAY	 RxD1     	29	199
