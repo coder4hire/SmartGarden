@@ -1,39 +1,28 @@
 #pragma once
 #include "LcdDisplay.h"
+#include "ScreenBase.h"
+#include <string>
 
-enum EKeys
+#define MAX_MENU_ITEMS 3
+
+struct MenuItem
 {
-	KEY_UP=1,
-	KEY_DOWN=2,
-	KEY_OK=4,
-	KEY_CANCEL=8,
-	KEY_ABORT=16
+	std::string Name;
+	CScreenBase* ChildScreen;
 };
 
-enum EKeysPins
-{
-	PINKEY_ABORT = 9,		// pin 5
-	PINKEY_CANCEL = 5,	//pin 18
-	PINKEY_UP = 8,		//pin 3,
-	PINKEY_DOWN = 4,	//pin 16,
-	PINKEY_OK = 1	//pin 12
-};
-
-#define PIN_BACKLIGHT 15
-
-
-class CMainMenu
+class CMainMenu: public CScreenBase
 {
 public:
 	CMainMenu();
 	~CMainMenu();
-	int Run();
-	int GetKey();
-	void TurnDisplayOn();
+	bool OnKeyPress(int key);
+
+	void PaintCursor();
+	virtual void Paint();
 
 protected:
-	CLcdDisplay lcd;
-	int screenNum;
-
+	int currentPosition;
+	static MenuItem menuItems[MAX_MENU_ITEMS];
 };
 

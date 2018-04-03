@@ -1,66 +1,73 @@
 #include "MainMenu.h"
-#include "wiringpi.h"
-#include <unistd.h>
+#include "NetworkSettings.h"
+#include "stdio.h"
 
-#define MAX_SCREENS 5
+MenuItem CMainMenu::menuItems[MAX_MENU_ITEMS] = {
+	{"Main Screen",new CNetworkSettings()},
+	{"Commands",new CNetworkSettings()},
+	{"Settings",new CNetworkSettings()}
+};
 
-CMainMenu::CMainMenu() :
-	lcd(4, 20, CLcdDisplay::BITS_4, 29, 28, 21, 7, 27, 26, 0, 0, 0, 0)
+CMainMenu::CMainMenu()
 {
-	screenNum=0;
+	currentPosition = 0;
 }
 
 
 CMainMenu::~CMainMenu()
 {
-}
-
-int CMainMenu::Run()
-{
-	TurnDisplayOn();
-	while (true)
+	for (int i=0;i<MAX_MENU_ITEMS;i++)
 	{
-		int key = GetKey();
-		if (key&KEY_UP)
-		{
-			screenNum = screenNum ? screenNum - 1 : MAX_SCREENS;
-		}
-		if (key&KEY_DOWN)
-		{
-			screenNum = (screenNum + 1) % MAX_SCREENS;
-		}
-
-		lcd.GotoXY(0, 0);
-		lcd.Printf("Screen: %d    ", screenNum);
-		lcd.GotoXY(0, 1);
-		if (key&KEY_UP)
-			lcd.Printf("UP ");
-		if (key&KEY_DOWN)
-			lcd.Printf("DOWN ");
-		if (key&KEY_OK)
-			lcd.Printf("OK ");
-		if (key&KEY_CANCEL)
-			lcd.Printf("CANCEL ");
-		if (key&KEY_ABORT)
-			lcd.Printf("ABORT ");
-		usleep(200000);
+		delete menuItems[i].ChildScreen;
 	}
-
-	return 0;
 }
 
-// Pins: 5,18,3,16,2
-int CMainMenu::GetKey()
+bool CMainMenu::OnKeyPress(int key)
 {
-	int retVal = 0;
-	retVal = (!digitalRead(PINKEY_UP)) * KEY_UP +
-		(!digitalRead(PINKEY_DOWN)) * KEY_DOWN +
-		(!digitalRead(PINKEY_OK)) * KEY_OK +
-		(!digitalRead(PINKEY_CANCEL)) * KEY_CANCEL +
-		(!digitalRead(PINKEY_ABORT)) * KEY_ABORT;
+	switch(key)
+	{
+	case KEY_UP:
+		currentPosition--;
+		if (currentPosition < 0)
+		{
+			currentPosition = MAX_MENU_ITEMS-1;
+		}
+		//PaintCursor();
+		break;
+	case KEY_DOWN:
+		currentPosition++;
+		if (currentPosition == MAX_MENU_ITEMS)
+		{
+			currentPosition = 0;
+		}
+		//PaintCursor();
+		break;
+	case KEY_OK:
+		//menuItems[currentPosition].ChildScreen->Run();
+		break;
+	case KEY_CANCEL:
+		return false;
+	}
+	return true;
 }
 
-void CMainMenu::TurnDisplayOn()
+void CMainMenu::PaintCursor()
 {
-	digitalWrite(PIN_BACKLIGHT, 1);
+	for (int i = 0; i < MAX_MENU_ITEMS; i++)
+	{
+		lcd.GotoXY(0, i);
+		lcd.PutChar(i == currentPosition ? '>' : ' ');
+	}
 }
+
+void CMainMenu::Paint()
+{
+	printf("Started");
+	lcd.Clear();
+	for (int i = 0; i<MAX_MENU_ITEMS; i++)
+	{
+		lcd.GotoXY(2, i);
+		lcd.PutS(menuItems[i].Name.c_str());
+	}
+}
+
