@@ -44,6 +44,7 @@ bool CMainMenu::OnKeyPress(int key)
 		break;
 	case KEY_OK:
 		menuItems[currentPosition].ChildScreen->Run();
+		Paint();
 		break;
 //	case KEY_CANCEL:
 //		return false;

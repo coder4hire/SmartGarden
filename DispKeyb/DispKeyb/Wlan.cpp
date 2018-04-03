@@ -20,7 +20,7 @@ CWlan::~CWlan()
 {
 }
 
-std::string CWlan::GetWLanIP()
+std::string CWlan::GetWLanIP(const char* ifName)
 {
 	struct ifaddrs *ifaddr, *ifa;
 	int family, s;
@@ -28,7 +28,7 @@ std::string CWlan::GetWLanIP()
 
 	if (getifaddrs(&ifaddr) == -1)
 	{
-		return "";
+		return "Err";
 	}
 
 
@@ -38,8 +38,7 @@ std::string CWlan::GetWLanIP()
 			continue;
 
 		s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-
-		if (s && (strcmp(ifa->ifa_name, "wlan0") == 0) && (ifa->ifa_addr->sa_family == AF_INET))
+		if (!s && (strcmp(ifa->ifa_name, ifName) == 0) && (ifa->ifa_addr->sa_family == AF_INET))
 		{
 			freeifaddrs(ifaddr);
 			return host;
@@ -47,6 +46,7 @@ std::string CWlan::GetWLanIP()
 	}
 
 	freeifaddrs(ifaddr);
+	return "";
 }
 
 void CWlan::Enable()

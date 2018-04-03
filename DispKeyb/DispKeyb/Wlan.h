@@ -6,7 +6,7 @@ class CWlan
 public:
 	~CWlan();
 
-	std::string GetWLanIP();
+	std::string GetWLanIP(const char* ifName);
 	void Enable();
 	void Disable();
 	bool IsEnabled();

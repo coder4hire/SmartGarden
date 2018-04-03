@@ -29,7 +29,7 @@ void CScreenBase::Run()
 		printf("Run2!!!\n");
 		return;
 	}
-	printf("Run3!!!\n");
+	printf("Run3!!!\n");	
 
 	lcd.TurnBacklightOn();
 	while (true)
@@ -43,7 +43,8 @@ void CScreenBase::Run()
 			if (oldLCDStatus)
 			{
 				if (!OnKeyPress(key))
-				{
+				{				
+					OnLeave();
 					return;
 				}
 			}
@@ -56,7 +57,6 @@ void CScreenBase::Run()
 
 		lcd.CheckDisplayBacklight(false);
 	}
-	OnLeave();
 }
 
 int CScreenBase::GetKey()
