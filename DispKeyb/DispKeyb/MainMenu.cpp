@@ -32,7 +32,7 @@ bool CMainMenu::OnKeyPress(int key)
 		{
 			currentPosition = MAX_MENU_ITEMS-1;
 		}
-		//PaintCursor();
+		PaintCursor();
 		break;
 	case KEY_DOWN:
 		currentPosition++;
@@ -40,13 +40,13 @@ bool CMainMenu::OnKeyPress(int key)
 		{
 			currentPosition = 0;
 		}
-		//PaintCursor();
+		PaintCursor();
 		break;
 	case KEY_OK:
-		//menuItems[currentPosition].ChildScreen->Run();
+		menuItems[currentPosition].ChildScreen->Run();
 		break;
-	case KEY_CANCEL:
-		return false;
+//	case KEY_CANCEL:
+//		return false;
 	}
 	return true;
 }
@@ -69,5 +69,7 @@ void CMainMenu::Paint()
 		lcd.GotoXY(2, i);
 		lcd.PutS(menuItems[i].Name.c_str());
 	}
+
+	PaintCursor();
 }
 

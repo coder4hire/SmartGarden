@@ -21,6 +21,8 @@ bool CScreenBase::OnKeyPress(int key)
 
 void CScreenBase::Run()
 {
+	lcd.Clear();
+
 	printf("Run1!!!\n");
 	if (!OnEnter())
 	{
@@ -28,8 +30,6 @@ void CScreenBase::Run()
 		return;
 	}
 	printf("Run3!!!\n");
-	lcd.Clear();
-	lcd.PutS("AAAAA");
 
 	lcd.TurnBacklightOn();
 	while (true)

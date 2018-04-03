@@ -20,6 +20,7 @@ bool CNetworkSettings::OnKeyPress(int key)
 void CNetworkSettings::Paint()
 {
 	lcd.Clear();
-	std::string ip = CWlan::Inst.GetWLanIP();
-	lcd.PutS(ip.c_str());
+	lcd.PutS("Network Setings\n");
+	//std::string ip = CWlan::Inst.GetWLanIP();
+	//lcd.PutS(ip.c_str());
 }
