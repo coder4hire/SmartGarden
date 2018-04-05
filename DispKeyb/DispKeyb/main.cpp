@@ -8,11 +8,15 @@
 
 void ConfigurePins();
 
+#define PIN_BACKLIGHT 15
+
 int main()
 {
 	CDomoticzInterface iDM("192.168.2.50",8080);
 
 	wiringPiSetup();
+	printf("Wiring initialized\n");
+	CLcdDisplay::Inst.Init(4, 20, CLcdDisplay::BITS_4, 29, 28, 21, 7, 27, 26, 0, 0, 0, 0, PIN_BACKLIGHT);
 	ConfigurePins();
 
 	CMainMenu menu;

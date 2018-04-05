@@ -3,9 +3,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-CLcdDisplay CScreenBase::lcd(4, 20, CLcdDisplay::BITS_4, 29, 28, 21, 7, 27, 26, 0, 0, 0, 0, PIN_BACKLIGHT);
-
-CScreenBase::CScreenBase()
+CScreenBase::CScreenBase(): lcd(CLcdDisplay::Inst)
 {
 }
 

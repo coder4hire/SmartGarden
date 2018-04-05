@@ -6,11 +6,15 @@ class CLcdDisplay
 {
 public:
 	enum BusWidth { BITS_4, BITS_8 };
-	CLcdDisplay(const int rows, const int cols, BusWidth bits,
+	
+	static CLcdDisplay Inst;
+	~CLcdDisplay();
+
+	bool Init(const int rows, const int cols, BusWidth bits,
 		const int rs, const int en,
 		const int d0, const int d1, const int d2, const int d3, const int d4,
-		const int d5, const int d6, const int d7,const int backlightPin);
-	~CLcdDisplay();
+		const int d5, const int d6, const int d7, const int backlightPin);
+
 	void GotoXY(int x,int y){ lcdPosition(lcdHandle, x, y); }
 	void PutChar(char ch) { lcdPutchar(lcdHandle, ch); }
 	void PutS(const char* str){ lcdPuts(lcdHandle, str); }
@@ -33,7 +37,15 @@ public:
 protected:
 	time_t lastTimeDisplayOn;
 
+	CLcdDisplay() 
+	{
+		backlightPin = 0;
+		lastTimeDisplayOn = 0;
+		DisplayTimeout = 0;
+	}
+
 	int backlightPin;
 	int lcdHandle;
 };
 
+extern CLcdDisplay LCD;

@@ -20,8 +20,6 @@ enum EKeysPins
 	PINKEY_OK = 1	//pin 12
 };
 
-#define PIN_BACKLIGHT 15
-
 class CScreenBase
 {
 public:
@@ -38,6 +36,6 @@ public:
 	int GetKey();
 
 protected:
-	static CLcdDisplay lcd;
+	CLcdDisplay& lcd;
 };
 
