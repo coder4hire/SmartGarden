@@ -14,7 +14,7 @@ bool CLcdDisplay::Init(const int rows, const int cols, BusWidth bits,
 	lcdHandle = lcdInit(rows, cols, bits==BITS_4 ? 4 : 8, rs, en, d0, d1, d2, d3, d4, d5, d6, d7);
 	this->backlightPin = backlightPin;
 	lastTimeDisplayOn = 0;
-	DisplayTimeout = 5;
+	DisplayTimeout = 15;
 
 	if (lcdHandle < 0)
 	{

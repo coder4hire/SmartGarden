@@ -64,6 +64,8 @@
     <ClCompile Include="LcdDisplay.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
+    <ClCompile Include="MainScreen.cpp" />
+    <ClCompile Include="MessageBox.cpp" />
     <ClCompile Include="NetworkSettings.cpp" />
     <ClCompile Include="ScreenBase.cpp" />
     <ClCompile Include="Wlan.cpp" />
@@ -77,6 +79,8 @@
     <ClInclude Include="LcdDisplay.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="MainMenu.h" />
+    <ClInclude Include="MainScreen.h" />
+    <ClInclude Include="MessageBox.h" />
     <ClInclude Include="NetworkSettings.h" />
     <ClInclude Include="ScreenBase.h" />
     <ClInclude Include="Wlan.h" />

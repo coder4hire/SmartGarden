@@ -1,9 +1,10 @@
 #include "MainMenu.h"
 #include "NetworkSettings.h"
+#include "MainScreen.h"
 #include "stdio.h"
 
 MenuItem CMainMenu::menuItems[MAX_MENU_ITEMS] = {
-	{"Main Screen",new CNetworkSettings()},
+	{"Main Screen",new CMainScreen()},
 	{"Commands",new CNetworkSettings()},
 	{"Settings",new CNetworkSettings()}
 };
@@ -12,7 +13,6 @@ CMainMenu::CMainMenu()
 {
 	currentPosition = 0;
 }
-
 
 CMainMenu::~CMainMenu()
 {

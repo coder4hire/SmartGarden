@@ -3,6 +3,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -59,5 +62,19 @@ void CWlan::Disable()
 
 bool CWlan::IsEnabled()
 {
-	return false;
+	return IsInterfaceOnline("wlan0");
+}
+
+bool CWlan::IsInterfaceOnline(const char* interface) 
+{
+	struct ifreq ifr;
+	int sock = socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP);
+	memset(&ifr, 0, sizeof(ifr));
+	strcpy(ifr.ifr_name, interface);
+	if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) 
+	{
+		perror("SIOCGIFFLAGS");
+	}
+	close(sock);
+	return !!(ifr.ifr_flags & IFF_UP);
 }

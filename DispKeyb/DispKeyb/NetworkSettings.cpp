@@ -1,6 +1,6 @@
 #include "NetworkSettings.h"
 #include "Wlan.h"
-
+#include "MessageBox.h"
 
 
 CNetworkSettings::CNetworkSettings()
@@ -14,6 +14,10 @@ CNetworkSettings::~CNetworkSettings()
 
 bool CNetworkSettings::OnKeyPress(int key)
 {
+	if (key == KEY_OK)
+	{
+		CMessageBox::Inst.Show("Enable WiFi ?",this);
+	}
 	return key != KEY_CANCEL;
 }
 

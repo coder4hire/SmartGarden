@@ -15,5 +15,7 @@ public:
 
 protected:
 	CWlan();
+	
+	bool IsInterfaceOnline(const char* interface);
 };
 

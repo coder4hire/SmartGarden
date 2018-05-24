@@ -5,6 +5,8 @@
 
 CScreenBase::CScreenBase(): lcd(CLcdDisplay::Inst)
 {
+	TimerSkipCount = 5;
+	timerCount = TimerSkipCount;
 }
 
 
@@ -21,13 +23,10 @@ void CScreenBase::Run()
 {
 	lcd.Clear();
 
-	printf("Run1!!!\n");
 	if (!OnEnter())
 	{
-		printf("Run2!!!\n");
 		return;
 	}
-	printf("Run3!!!\n");	
 
 	lcd.TurnBacklightOn();
 	while (true)
@@ -40,17 +39,23 @@ void CScreenBase::Run()
 			lcd.CheckDisplayBacklight(true);
 			if (oldLCDStatus)
 			{
+				usleep(200000);
 				if (!OnKeyPress(key))
 				{				
 					OnLeave();
 					return;
 				}
 			}
-			usleep(200000);
 		}
 		else
 		{
 			usleep(50000);
+		}
+
+		if (--timerCount <= 0)
+		{
+			timerCount = TimerSkipCount;
+			OnNonPreciseTimer();
 		}
 
 		lcd.CheckDisplayBacklight(false);

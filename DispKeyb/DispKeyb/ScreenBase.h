@@ -30,12 +30,17 @@ public:
 	virtual void Run();
 	virtual void Paint() {};
 
+	virtual void OnNonPreciseTimer() {};
+
 	virtual bool OnEnter() { Paint(); return true; }
 	virtual void OnLeave() {}
 
 	int GetKey();
 
+	int TimerSkipCount;
+
 protected:
+	int timerCount;
 	CLcdDisplay& lcd;
 };
 
