@@ -11,15 +11,6 @@ enum EKeys
 	KEY_ABORT = 16
 };
 
-enum EKeysPins
-{
-	PINKEY_ABORT = 9,		// pin 5
-	PINKEY_CANCEL = 5,	//pin 18
-	PINKEY_UP = 8,		//pin 3,
-	PINKEY_DOWN = 4,	//pin 16,
-	PINKEY_OK = 1	//pin 12
-};
-
 class CScreenBase
 {
 public:

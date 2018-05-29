@@ -1,12 +1,17 @@
 #include "wiringPi.h"
 #include "stdio.h"
 #include <unistd.h>
+#include <errno.h>
 #include "DomoticzInterface.h"
 #include "main.h"
 #include "MainMenu.h"
+#include "PinsDefinitions.h"
+
 //unsigned int sleep(unsigned int seconds);
 
 void ConfigurePins();
+bool changeOwner(char *file);
+bool exportPin(int pin, int mode);
 
 #define PIN_BACKLIGHT 15
 
@@ -80,9 +85,79 @@ void ConfigurePins()
 	pullUpDnControl(PINKEY_CANCEL, PUD_UP);
 	pullUpDnControl(PINKEY_ABORT, PUD_UP);
 
-	// GPIO Pins
-	pinMode(30, INPUT);
-	pinMode(31, INPUT);
-	pullUpDnControl(30, PUD_DOWN);
-	pullUpDnControl(31, PUD_DOWN);
+	//// GPIO Inputs
+	pinMode(PIN_IN1, INPUT);
+	pinMode(PIN_IN3, INPUT);
+	pullUpDnControl(PIN_IN1, PUD_DOWN);
+	pullUpDnControl(PIN_IN3, PUD_DOWN);
+
+	//// GPIO Outputs
+	pinMode(PIN_OUT1, OUTPUT);
+	pinMode(PIN_OUT2, OUTPUT);
+	pinMode(PIN_OUT3, OUTPUT);
+	pinMode(PIN_OUT4, OUTPUT);
+
+	// Exporting Outputs. BCM pins numbering is used here (not wiringPI as above)
+	exportPin(21, OUTPUT);
+	exportPin(10, OUTPUT);
+	exportPin(9, OUTPUT);
+    exportPin(8, OUTPUT);
+}
+
+bool changeOwner(char *file)
+{
+	uid_t uid = getuid();
+	uid_t gid = getgid();
+
+	return chown(file, uid, gid) != 0;
+}
+
+bool exportPin(int pin, int mode)
+{
+	FILE *fd;
+	char fName[128];
+
+	if ((fd = fopen("/sys/class/gpio/export", "w")) == NULL)
+	{
+		return false;
+	}
+
+	fprintf(fd, "%d\n", pin);
+	fclose(fd);
+
+	sprintf(fName, "/sys/class/gpio/gpio%d/direction", pin);
+	if ((fd = fopen(fName, "w")) == NULL)
+	{
+		return false;
+	}
+
+	if (mode == INPUT)
+	{
+		fprintf(fd, "in\n");
+	}
+	else if (mode == OUTPUT)
+	{
+		fprintf(fd, "out\n");
+	}
+	else
+	{
+		fclose(fd);
+		return false;
+	}
+
+	fclose(fd);
+
+	// Change ownership so the current user can actually use it!
+
+	bool retVal = true;
+	sprintf(fName, "/sys/class/gpio/gpio%d/value", pin);
+	retVal &= changeOwner(fName);
+
+	sprintf(fName, "/sys/class/gpio/gpio%d/edge", pin);
+	retVal &= changeOwner(fName);
+
+	sprintf(fName, "/sys/class/gpio/gpio%d/active_low", pin);
+	retVal &= changeOwner(fName);
+
+	return retVal;
 }

@@ -19,7 +19,7 @@ KBD_Jack Name	RPI_Jack wiringPI
 4	N/C
 5	KEY1	5	9
 6	KEY2	18	5
-7	KEY3	3	12
+7	KEY3	3	8
 8	KEY4	16	4
 9	KEY5	12	1
 10	+5V
@@ -34,7 +34,8 @@ Name		RPI_Jack wiringPI BCM
 GPIO inputs:
 Name		RPI_Jack wiringPI BCM
 1		10	 16	  14
-2		24	 10	  67
+3		24	 10	  67
+There're no inputs 2 and 4
 
 
 Orange PI pins usage

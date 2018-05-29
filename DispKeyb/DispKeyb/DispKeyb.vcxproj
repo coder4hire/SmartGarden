@@ -59,12 +59,15 @@
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommandsMenu.cpp" />
     <ClCompile Include="DomoticzDataParser.cpp" />
     <ClCompile Include="DomoticzInterface.cpp" />
+    <ClCompile Include="HWInterface.cpp" />
     <ClCompile Include="LcdDisplay.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="MainScreen.cpp" />
+    <ClCompile Include="MenuBase.cpp" />
     <ClCompile Include="MessageBox.cpp" />
     <ClCompile Include="NetworkSettings.cpp" />
     <ClCompile Include="ScreenBase.cpp" />
@@ -74,12 +77,16 @@
     <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandsMenu.h" />
     <ClInclude Include="DomoticzDataParser.h" />
     <ClInclude Include="DomoticzInterface.h" />
+    <ClInclude Include="HWInterface.h" />
+    <ClInclude Include="PinsDefinitions.h" />
     <ClInclude Include="LcdDisplay.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="MainScreen.h" />
+    <ClInclude Include="MenuBase.h" />
     <ClInclude Include="MessageBox.h" />
     <ClInclude Include="NetworkSettings.h" />
     <ClInclude Include="ScreenBase.h" />

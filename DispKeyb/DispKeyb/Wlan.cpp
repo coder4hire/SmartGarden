@@ -54,10 +54,12 @@ std::string CWlan::GetWLanIP(const char* ifName)
 
 void CWlan::Enable()
 {
+	system("ifconfig wlan0 up");
 }
 
 void CWlan::Disable()
 {
+	system("ifconfig wlan0 down");
 }
 
 bool CWlan::IsEnabled()

@@ -12,8 +12,10 @@ public:
 	virtual void Paint();
 
 	static CMessageBox Inst;
+	bool GetYesResult() { return isYes; }
 
 protected:
 	const char* message;
+	bool isYes;
 };
 

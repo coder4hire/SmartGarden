@@ -1,5 +1,6 @@
 #include "ScreenBase.h"
 #include "wiringpi.h"
+#include "PinsDefinitions.h"
 #include <unistd.h>
 #include <stdio.h>
 
