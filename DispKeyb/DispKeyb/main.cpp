@@ -12,6 +12,7 @@
 void ConfigurePins();
 bool changeOwner(char *file);
 bool exportPin(int pin, int mode);
+bool setEdgeMode(int pin, int mode);
 
 #define PIN_BACKLIGHT 15
 
@@ -102,6 +103,10 @@ void ConfigurePins()
 	exportPin(10, OUTPUT);
 	exportPin(9, OUTPUT);
     exportPin(8, OUTPUT);
+	exportPin(14, INPUT);
+	exportPin(67, INPUT);
+	setEdgeMode(14, INT_EDGE_BOTH);
+	setEdgeMode(67, INT_EDGE_BOTH);
 }
 
 bool changeOwner(char *file)
@@ -160,4 +165,71 @@ bool exportPin(int pin, int mode)
 	retVal &= changeOwner(fName);
 
 	return retVal;
+}
+
+const char* strEdgeModes[] = { "none", "rising","falling","both" };
+
+bool setEdgeMode(int pin, int edgeMode)
+{
+	FILE *fd;
+	char fName[128];
+
+	if (edgeMode < 0 || edgeMode>3)
+	{
+		return false;
+	}
+
+	if (pin == 0)
+	{
+		printf("%d is invalid pin,please check it over.\n", pin);
+		return false;
+	}
+
+	// Export the pin and set direction to input
+	if ((fd = fopen("/sys/class/gpio/export", "w")) == NULL)
+	{
+		fprintf(stderr, "Unable to open GPIO export interface\n");
+		return false;
+	}
+
+	fprintf(fd, "%d\n", pin);
+	fclose(fd);
+
+	sprintf(fName, "/sys/class/gpio/gpio%d/direction", pin);
+	if ((fd = fopen(fName, "w")) == NULL)
+	{
+		fprintf(stderr, "Unable to open GPIO direction interface for pin %d\n", pin);
+		return false;
+	}
+
+	fprintf(fd, "none\n");
+	fclose(fd);
+
+	fd = fopen(fName, "w");
+	fprintf(fd, "in\n");
+	fclose(fd);
+
+	sprintf(fName, "/sys/class/gpio/gpio%d/edge", pin);
+	if ((fd = fopen(fName, "w")) == NULL)
+	{
+		fprintf(stderr, "Unable to open GPIO edge interface for pin %d\n", pin);
+		return false;
+	}
+
+	// Always reset mode to "none" before setting a new mode
+	fprintf(fd, "none\n");
+	fclose(fd);
+	
+	fd = fopen(fName, "w");
+	fprintf(fd, "%s\n",strEdgeModes[edgeMode]);
+
+	// Change ownership of the value and edge files, so the current user can actually use it!
+	sprintf(fName, "/sys/class/gpio/gpio%d/value", pin);
+	changeOwner(fName);
+
+	sprintf(fName, "/sys/class/gpio/gpio%d/edge", pin);
+	changeOwner(fName);
+
+	fclose(fd);
+	return true;
 }
