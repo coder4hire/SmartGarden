@@ -2,10 +2,17 @@
 #include <stdio.h>
 #include <unistd.h>
 
+CDomoticzDataParser CDomoticzDataParser::Inst;
+
 CDomoticzDataParser::CDomoticzDataParser()
 {
 	Temperature = 0;
 	CPULoad = 0;
+	RoomTemp = 0;
+	OutsideTemp = 0;
+	
+	oldTime = 0;
+	updateInterval = 5; // seconds
 }
 
 
@@ -26,9 +33,20 @@ void CDomoticzDataParser::LoadData()
 	}
 	if (fp)
 	{
-		fscanf(fp, "CPUTemp:%lf\nCPULoad:%lf", &Temperature, &CPULoad);
-
+		fscanf(fp, "CPUTemp:%lf\nCPULoad:%lf\nRoomTemp:%lf\nOutsideTemp:%lf", &Temperature, &CPULoad,&RoomTemp,&OutsideTemp);
 		fclose(fp);
+		time(&oldTime);
 	}
 
+}
+
+void CDomoticzDataParser::RefreshDataIfNeeded()
+{
+	time_t now;
+	time(&now);
+	if (now - oldTime > updateInterval)
+	{
+		oldTime = now;
+		LoadData();
+	}
 }

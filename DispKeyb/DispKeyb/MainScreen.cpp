@@ -1,5 +1,7 @@
 #include "MainScreen.h"
 #include "Wlan.h"
+#include "DomoticzDataParser.h"
+#include "stdio.h"
 
 CMainScreen::CMainScreen()
 {
@@ -11,6 +13,12 @@ CMainScreen::~CMainScreen()
 {
 }
 
+bool CMainScreen::OnEnter()
+{
+	CDomoticzDataParser::Inst.RefreshDataIfNeeded();
+	return CScreenBase::OnEnter();
+}
+
 bool CMainScreen::OnKeyPress(int key)
 {
 	return key != KEY_CANCEL;
@@ -18,6 +26,7 @@ bool CMainScreen::OnKeyPress(int key)
 
 void CMainScreen::OnNonPreciseTimer()
 {
+	CDomoticzDataParser::Inst.RefreshDataIfNeeded();
 	Paint();
 }
 
@@ -36,5 +45,18 @@ void CMainScreen::Paint()
 
 		lcd.GotoXY(0, 3);
 		lcd.Printf(CWlan::Inst.IsEnabled() ? "WiFi" : "----");
+
+		lcd.GotoXY(0, 3);
+		lcd.Printf(CWlan::Inst.IsEnabled() ? "WiFi" : "----");
+
+		char strTemp[20];
+		sprintf(strTemp, "R:%5.1lf", CDomoticzDataParser::Inst.RoomTemp);
+		lcd.GotoXY(13, 0);
+		lcd.Printf(strTemp);
+
+		sprintf(strTemp, "O:%5.1lf", CDomoticzDataParser::Inst.OutsideTemp);
+		lcd.GotoXY(13, 1);
+		lcd.Printf(strTemp);
+
 	}
 }

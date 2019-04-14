@@ -1,13 +1,23 @@
 #pragma once
+#include <time.h>
+
 class CDomoticzDataParser
 {
 public:
-	CDomoticzDataParser();
+	static CDomoticzDataParser Inst;
 	~CDomoticzDataParser();
 
 	void LoadData();
+	void RefreshDataIfNeeded();
 
-	int Temperature;
-	int CPULoad;
+	double Temperature;
+	double CPULoad;
+	double RoomTemp;
+	double OutsideTemp;
+
+protected:
+	CDomoticzDataParser();
+	int updateInterval;
+	time_t oldTime;
 };
 
