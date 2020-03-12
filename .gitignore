@@ -5,3 +5,4 @@
 *.user
 */Release
 */*/Release
+/ESP32Cam/pwd.h
