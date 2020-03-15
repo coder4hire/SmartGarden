@@ -19,6 +19,8 @@
 // Модуль камеры
 #define CAMERA_MODEL_AI_THINKER
 
+time_t lastTimeWifiChecked;
+
 //const char* ssid = "***";
 //const char* password = "***";
 
@@ -227,13 +229,33 @@ void setup() {
   }
   Serial.println("");
   Serial.println("WiFi connected");
+  pinMode(33,OUTPUT);
+  digitalWrite(33,0);
   
   // Start streaming web server
   startCameraServer();
   Serial.print("Camera Stream Ready! Go to: http://");
   Serial.print(WiFi.localIP());
+  lastTimeWifiChecked=millis();
+
 }
 
 void loop() {
-  delay(1000);
+  // if wifi is down, try reconnecting every 30 seconds
+  if (WiFi.status() != WL_CONNECTED && millis() > (lastTimeWifiChecked+30000))
+  {
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+    lastTimeWifiChecked = millis();
+  }
+  
+  if(WiFi.status() == WL_CONNECTED)
+  {
+    digitalWrite(33,0);
+    delay(10);
+    digitalWrite(33,1);
+  }
+  
+  delay(5000);
 }
