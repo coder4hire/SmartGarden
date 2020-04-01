@@ -8,6 +8,10 @@ public:
 
 	bool GetOutStatus(unsigned int port);
 
+	int ALSAVolume(long& vol, bool isReading);
+	void SaveVolume();
+	void RestoreVolume();
+
 protected:
 	CHWInterface();
 	static int OutNum2Pin[];

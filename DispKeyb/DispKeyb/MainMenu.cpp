@@ -2,12 +2,15 @@
 #include "NetworkSettings.h"
 #include "CommandsMenu.h"
 #include "MainScreen.h"
-#include "stdio.h"
+#include "SoundMenu.h"
+
+#include <stdio.h>
 
 CMainMenu::CMainMenu()
 {
 	menuItems.push_back(CMenuItem("Main Screen", new CMainScreen()));
 	menuItems.push_back(CMenuItem("Commands", new CCommandsMenu()));
+	menuItems.push_back(CMenuItem("Sound", new CSoundMenu()));
 	menuItems.push_back(CMenuItem("Settings", new CNetworkSettings()));
 }
 

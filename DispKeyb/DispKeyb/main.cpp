@@ -6,6 +6,7 @@
 #include "main.h"
 #include "MainMenu.h"
 #include "PinsDefinitions.h"
+#include "HWInterface.h"
 
 //unsigned int sleep(unsigned int seconds);
 
@@ -24,6 +25,7 @@ int main()
 	printf("Wiring initialized\n");
 	CLcdDisplay::Inst.Init(4, 20, CLcdDisplay::BITS_4, 29, 28, 21, 7, 27, 26, 0, 0, 0, 0, PIN_BACKLIGHT);
 	ConfigurePins();
+	CHWInterface::Inst.RestoreVolume();
 
 	CMainMenu menu;
 	menu.Run();
