@@ -1,21 +1,25 @@
 #include "NetworkSettings.h"
 #include "Wlan.h"
 #include "MessageBox.h"
+#include "WiFiConfigMenu.h"
 
 
-CNetworkSettings::CNetworkSettings()
+CNetworkSettings::CNetworkSettings(): CMenuBase(2)
 {
+	menuItems.push_back(CMenuItem("Disable Wifi", NULL));
+	menuItems.push_back(CMenuItem("Switch Wifi Mode", new CWiFiConfigMenu));
 }
-
 
 CNetworkSettings::~CNetworkSettings()
 {
 }
 
-bool CNetworkSettings::OnKeyPress(int key)
+bool CNetworkSettings::OnMenuItemSelected(int index)
 {
-	if (key == KEY_OK)
+	long vol = 0;
+	switch (index)
 	{
+	case 0: // Volume up
 		if (CWlan::Inst.IsEnabled())
 		{
 			if (CMessageBox::Inst.Show("Disable WiFi ?", this))
@@ -32,19 +36,24 @@ bool CNetworkSettings::OnKeyPress(int key)
 				Paint();
 			}
 		}
+		break;
 	}
-	return key != KEY_CANCEL;
+	return true;
 }
+
 
 void CNetworkSettings::Paint()
 {
-	lcd.Clear();
+	bool isEnabled = CWlan::Inst.IsEnabled();
+	menuItems[0].Name = isEnabled ? "Disable WiFi" : "Enable WiFi";
+	CMenuBase::Paint();
+	lcd.GotoXY(0, 0);
 	lcd.PutS("Network Setings");
 	lcd.GotoXY(0, 1);
-	bool isEnabled = CWlan::Inst.IsEnabled();
+
 	if (isEnabled)
 	{
-		std::string ip = CWlan::Inst.GetWLanIP("wlan0");
+		std::string ip = CWlan::Inst.GetWLanIP(MAIN_WLAN);
 		lcd.PutS("w0: ");
 		lcd.PutS(ip.c_str());
 	}
@@ -53,10 +62,8 @@ void CNetworkSettings::Paint()
 		lcd.PutS("w0: disabled");
 	}
 
-	lcd.GotoXY(0, 2);
+/*	lcd.GotoXY(0, 2);
 	std::string ip = CWlan::Inst.GetWLanIP("wlan1");
 	lcd.PutS("w1: ");
-	lcd.PutS(ip.c_str());
-	lcd.GotoXY(2, 3);
-	lcd.PutS(isEnabled ? "Ent-disable WiFi" : " Enter-enable WiFi");
+	lcd.PutS(ip.c_str());*/
 }

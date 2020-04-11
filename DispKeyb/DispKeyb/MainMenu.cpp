@@ -3,8 +3,10 @@
 #include "CommandsMenu.h"
 #include "MainScreen.h"
 #include "SoundMenu.h"
+#include "MessageBox.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 CMainMenu::CMainMenu()
 {
@@ -16,6 +18,17 @@ CMainMenu::CMainMenu()
 
 bool CMainMenu::OnKeyPress(int key)
 {
+	if (key == (KEY_ABORT | KEY_CANCEL | KEY_OK))
+	{
+		if (CMessageBox::Inst.Show("Shutdown system ?"))
+		{
+			system("shutdown 0");
+		}
+		else
+		{
+			Paint();
+		}
+	}
 	if (!CMenuBase::OnKeyPress(key))
 	{
 		// On Esc keypress go to Main Screen

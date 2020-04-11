@@ -2,6 +2,7 @@
 #include "Wlan.h"
 #include "DomoticzDataParser.h"
 #include "stdio.h"
+#include "MainMenu.h"
 
 CMainScreen::CMainScreen()
 {
@@ -21,7 +22,24 @@ bool CMainScreen::OnEnter()
 
 bool CMainScreen::OnKeyPress(int key)
 {
-	return key != KEY_CANCEL;
+	switch (key)
+	{
+	case KEY_OK:
+	{
+		CMainMenu menu;
+		menu.Run();
+		break;
+	}
+	case KEY_CANCEL | KEY_DOWN:
+		CWlan::Inst.Disable();
+		Paint();
+		break;
+	case KEY_CANCEL | KEY_UP:
+		CWlan::Inst.Enable();
+		Paint();
+		break;
+	}
+	return true;
 }
 
 void CMainScreen::OnNonPreciseTimer()

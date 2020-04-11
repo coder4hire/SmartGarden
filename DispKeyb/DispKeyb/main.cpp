@@ -4,7 +4,7 @@
 #include <errno.h>
 #include "DomoticzInterface.h"
 #include "main.h"
-#include "MainMenu.h"
+#include "MainScreen.h"
 #include "PinsDefinitions.h"
 #include "HWInterface.h"
 
@@ -27,8 +27,8 @@ int main()
 	ConfigurePins();
 	CHWInterface::Inst.RestoreVolume();
 
-	CMainMenu menu;
-	menu.Run();
+	CMainScreen mainScreen;
+	mainScreen.Run();
 	return 0;
 
 	//FILE* fp = NULL;

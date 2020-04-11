@@ -11,7 +11,6 @@
 #include <unistd.h>
 #include <string.h>
 
-
 CWlan CWlan::Inst;
 
 CWlan::CWlan()
@@ -54,17 +53,29 @@ std::string CWlan::GetWLanIP(const char* ifName)
 
 void CWlan::Enable()
 {
-	system("ifconfig wlan0 up");
+	system("ifconfig "MAIN_WLAN" up");
 }
 
 void CWlan::Disable()
 {
-	system("ifconfig wlan0 down");
+	system("ifconfig "MAIN_WLAN" down");
 }
+
+void CWlan::SetAPMode()
+{
+	system("nmcli c up AP");
+	system("service isc-dhcp-server start");
+}
+
+void CWlan::SetClientMode()
+{
+	system("nmcli c up wifi1");
+}
+
 
 bool CWlan::IsEnabled()
 {
-	return IsInterfaceOnline("wlan0");
+	return IsInterfaceOnline(MAIN_WLAN);
 }
 
 bool CWlan::IsInterfaceOnline(const char* interface) 

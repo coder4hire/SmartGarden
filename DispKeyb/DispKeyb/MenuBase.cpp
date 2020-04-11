@@ -1,7 +1,8 @@
 #include "MenuBase.h"
 
-CMenuBase::CMenuBase()
+CMenuBase::CMenuBase(unsigned int startRow)
 {
+	this->startRow = startRow;
 	currentPosition = 0;
 }
 
@@ -59,7 +60,7 @@ void CMenuBase::PaintCursor()
 {
 	for (int i = 0; i < menuItems.size(); i++)
 	{
-		lcd.GotoXY(0, i);
+		lcd.GotoXY(0, i+startRow);
 		lcd.PutChar(i == currentPosition ? '>' : ' ');
 	}
 }
@@ -69,7 +70,7 @@ void CMenuBase::Paint()
 	lcd.Clear();
 	for (int i = 0; i<menuItems.size(); i++)
 	{
-		lcd.GotoXY(2, i);
+		lcd.GotoXY(2, i+startRow);
 		lcd.PutS(menuItems[i].Name.c_str());
 	}
 

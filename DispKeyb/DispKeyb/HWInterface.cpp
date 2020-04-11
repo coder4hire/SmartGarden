@@ -44,7 +44,7 @@ int CHWInterface::ALSAVolume(long& vol, bool isReading)
     snd_mixer_elem_t* elem;
     snd_mixer_selem_id_t* sid;
 
-    static const char* mix_name = "Lineout volume control";
+    static const char* mix_name = "Line Out";
     static const char* card = "default";
     static int mix_index = 0;
 

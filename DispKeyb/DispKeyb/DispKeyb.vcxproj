@@ -72,6 +72,7 @@
     <ClCompile Include="NetworkSettings.cpp" />
     <ClCompile Include="ScreenBase.cpp" />
     <ClCompile Include="SoundMenu.cpp" />
+    <ClCompile Include="WiFiConfigMenu.cpp" />
     <ClCompile Include="Wlan.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -92,6 +93,7 @@
     <ClInclude Include="NetworkSettings.h" />
     <ClInclude Include="ScreenBase.h" />
     <ClInclude Include="SoundMenu.h" />
+    <ClInclude Include="WiFiConfigMenu.h" />
     <ClInclude Include="Wlan.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

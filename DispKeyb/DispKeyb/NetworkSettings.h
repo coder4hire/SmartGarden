@@ -1,14 +1,14 @@
 #pragma once
-#include "ScreenBase.h"
+#include "MenuBase.h"
 
 class CNetworkSettings :
-	public CScreenBase
+	public CMenuBase
 {
 public:
 	CNetworkSettings();
 	~CNetworkSettings();
 
-	virtual bool OnKeyPress(int key);
+	bool OnMenuItemSelected(int index);
 
 	virtual void Paint();
 };

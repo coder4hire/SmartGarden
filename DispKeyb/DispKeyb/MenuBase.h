@@ -19,7 +19,7 @@ struct CMenuItem
 class CMenuBase : public CScreenBase
 {
 public:
-	CMenuBase();
+	CMenuBase(unsigned int startRow=0);
 	virtual ~CMenuBase();
 	virtual bool OnKeyPress(int key);
 
@@ -27,6 +27,7 @@ public:
 	virtual void Paint();
 
 protected:
+	unsigned int startRow;
 	int currentPosition;
 	std::vector<CMenuItem> menuItems;
 
