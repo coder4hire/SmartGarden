@@ -23,6 +23,13 @@ time_t lastTimeWifiChecked;
 
 //const char* ssid = "***";
 //const char* password = "***";
+//IPAddress local_IP(0,0,0,0);
+//IPAddress gateway(0,0,0,0);
+//IPAddress subnet(0,0,0,0);
+
+IPAddress primaryDNS(0,0,0,0);   //optional
+IPAddress secondaryDNS(0,0,0,0); //optional
+
 
 #if defined(CAMERA_MODEL_AI_THINKER)
   #define PWDN_GPIO_NUM     32
@@ -42,7 +49,7 @@ time_t lastTimeWifiChecked;
   #define HREF_GPIO_NUM     23
   #define PCLK_GPIO_NUM     22
 #else
-  #error "Модель камеры не выбрана"
+  #error "Camera model is not selected"
 #endif
 
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
@@ -69,6 +76,7 @@ static esp_err_t stream_handler(httpd_req_t *req){
   }
 
   while(true){
+    Serial.print("F");
     fb = esp_camera_fb_get();
     if (!fb) {
       Serial.println("Camera capture failed");
@@ -76,6 +84,7 @@ static esp_err_t stream_handler(httpd_req_t *req){
     } else {
       if(fb->width > 400){
         if(fb->format != PIXFORMAT_JPEG){
+          Serial.print("C");                            
           bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
           esp_camera_fb_return(fb);
           fb = NULL;
@@ -84,21 +93,25 @@ static esp_err_t stream_handler(httpd_req_t *req){
             res = ESP_FAIL;
           }
         } else {
+          Serial.print("J");                    
           _jpg_buf_len = fb->len;
           _jpg_buf = fb->buf;
         }
       }
     }
+    Serial.print("S");
     if(res == ESP_OK){
       size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
       res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
     }
     if(res == ESP_OK){
+      Serial.printf("_%d_",_jpg_buf_len);
       res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
     }
     if(res == ESP_OK){
       res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
     }
+    Serial.print("E");
     if(fb){
       esp_camera_fb_return(fb);
       fb = NULL;
@@ -110,10 +123,24 @@ static esp_err_t stream_handler(httpd_req_t *req){
     if(res != ESP_OK){
       break;
     }
-   
+   Serial.println(".");
   }
+  Serial.println(";");  
   return res;
 }
+
+void BlinkNTimes(int n)
+{
+  digitalWrite(33,1);
+  for(int i=0;i<n;i++)
+  {
+    digitalWrite(33,0);  
+    delay(300);
+    digitalWrite(33,1);
+    delay(300);
+  }
+}
+
 
 static size_t jpg_encode_stream(void * arg, size_t index, const void* data, size_t len){
     jpg_chunking_t *j = (jpg_chunking_t *)arg;
@@ -132,6 +159,7 @@ static esp_err_t capture_handler(httpd_req_t *req){
     esp_err_t res = ESP_OK;
     int64_t fr_start = esp_timer_get_time();
 
+    Serial.print("F");
     fb = esp_camera_fb_get();
     if (!fb) {
         Serial.println("Camera capture failed");
@@ -147,15 +175,19 @@ static esp_err_t capture_handler(httpd_req_t *req){
     uint8_t * out_buf;
     size_t fb_len = 0;
     if(fb->format == PIXFORMAT_JPEG){
+        Serial.print("J");
         fb_len = fb->len;
         res = httpd_resp_send(req, (const char *)fb->buf, fb->len);
     } else {
+        Serial.print("R");
         jpg_chunking_t jchunk = {req, 0};
         res = frame2jpg_cb(fb, 80, jpg_encode_stream, &jchunk)?ESP_OK:ESP_FAIL;
         httpd_resp_send_chunk(req, NULL, 0);
         fb_len = jchunk.len;
     }
+    Serial.print("E");
     esp_camera_fb_return(fb);
+    Serial.println(".");
     return res;
 }
 
@@ -179,7 +211,7 @@ void startCameraServer(){
     
   //Serial.printf("Starting web server on port: '%d'\n", config.server_port);
   if (httpd_start(&stream_httpd, &config) == ESP_OK) {
-//    httpd_register_uri_handler(stream_httpd, &index_uri);
+    httpd_register_uri_handler(stream_httpd, &index_uri);
     httpd_register_uri_handler(stream_httpd, &capture_uri);
   }
 }
@@ -211,26 +243,52 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG; 
-  config.frame_size = FRAMESIZE_SVGA;
+  config.frame_size = FRAMESIZE_XGA;
   config.jpeg_quality = 10;
   config.fb_count = 2;
   
   // Camera init
   esp_err_t err = esp_camera_init(&config);
+  // Wi-Fi connection
+  pinMode(33,OUTPUT);
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
+    BlinkNTimes(2);
+    delay(2000);
+    ESP.restart();
     return;
   }
+
+  // Configures static IP address
+  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
+    Serial.println("STA Failed to configure");
+    BlinkNTimes(3);
+    delay(2000);
+    ESP.restart();
+    return;
+  } 
+
   // Wi-Fi connection
+  digitalWrite(33,0);  
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  for(int i=0;WiFi.status() != WL_CONNECTED;i++) 
+  {
     delay(500);
     Serial.print(".");
+    if(i==60)
+    {
+      WiFi.disconnect();
+      digitalWrite(33,1);
+      delay(1000);
+      digitalWrite(33,0);
+      Serial.println("\nReconnecting");
+    }
   }
+  digitalWrite(33,1);
+  
   Serial.println("");
   Serial.println("WiFi connected");
-  pinMode(33,OUTPUT);
-  digitalWrite(33,0);
+  digitalWrite(33,1);
   
   // Start streaming web server
   startCameraServer();
