@@ -25,6 +25,11 @@ bool CLcdDisplay::Init(const int rows, const int cols, BusWidth bits,
 	return true;
 }
 
+bool CLcdDisplay::InitDefault()
+{
+	return Init(4, 20, CLcdDisplay::BITS_4, 29, 28, 21, 7, 27, 26, 0, 0, 0, 0, PIN_BACKLIGHT);
+}
+
 void CLcdDisplay::Printf(const char *message, ...)
 {
 	va_list argp;

@@ -5,4 +5,8 @@
 *.user
 */Release
 */*/Release
+*/Debug
+*/*/Debug
 /ESP32Cam/pwd.h
+/ESP32CamClient/pwd.h
+*/__vm

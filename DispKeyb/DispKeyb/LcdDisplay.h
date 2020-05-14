@@ -2,6 +2,8 @@
 #include <lcd.h>
 #include <time.h>
 
+#define PIN_BACKLIGHT 15
+
 class CLcdDisplay
 {
 public:
@@ -14,6 +16,8 @@ public:
 		const int rs, const int en,
 		const int d0, const int d1, const int d2, const int d3, const int d4,
 		const int d5, const int d6, const int d7, const int backlightPin);
+
+	bool InitDefault();
 
 	void GotoXY(int x,int y){ lcdPosition(lcdHandle, x, y); }
 	void PutChar(char ch) { lcdPutchar(lcdHandle, ch); }
