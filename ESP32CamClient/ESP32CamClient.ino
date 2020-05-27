@@ -12,8 +12,22 @@
 #include "soc/soc.h" 
 #include "soc/rtc_cntl_reg.h"  
 #include "esp_http_server.h"
-#include "pwd.h"
 #include "PacketHeader.h"
+
+struct NetSettingsStruct
+{
+	const char* ssid;
+	const char* password;
+
+	IPAddress local_IP;
+	IPAddress gateway;
+	const char* serverHost;
+};
+
+#include "pwd.h"
+
+int currentNetSetting=0;
+int netSettingsNum = sizeof(NetSettings) / sizeof(NetSettingsStruct);
 
 #define PIXFORMAT_JPEG_CONVERTED ((pixformat_t)(PIXFORMAT_JPEG+0x10000))
 time_t lastTimeWifiChecked;
@@ -28,12 +42,6 @@ void noprintf(char* str, ...) {}
 #define dbgPrintln(x)
 #define dbgPrintf noprintf
 #endif
-
-//const char* ssid = "***";
-//const char* password = "***";
-//IPAddress local_IP(0,0,0,0);
-//IPAddress gateway(0,0,0,0);
-//IPAddress subnet(0,0,0,0);
 
 IPAddress primaryDNS(0, 0, 0, 0);   //optional
 IPAddress secondaryDNS(0, 0, 0, 0); //optional
@@ -163,35 +171,41 @@ void setup()
 		return;
 	}
 
-	// Configures static IP address
-	if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
-	{
-		dbgPrintln("STA Failed to configure");
-		BlinkNTimes(3);
-		delay(2000);
-		ESP.restart();
-		return;
-	}
-
 	// Wi-Fi connection
 	digitalWrite(33, 0);
-	WiFi.begin(ssid, password);
-	for (int i = 0; WiFi.status() != WL_CONNECTED; i++)
+	while(WiFi.status() != WL_CONNECTED)
 	{
-		delay(500);
-		dbgPrint(".");
+		// Configures static IP address
+		if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
+		{
+			dbgPrintln("STA Failed to configure");
+			BlinkNTimes(3);
+			delay(2000);
+			ESP.restart();
+			return;
+		}
+		WiFi.begin(NetSettings[currentNetSetting].ssid, NetSettings[currentNetSetting].password);
+	
+		int i = 0;
+		for (i = 0; i < 60 && WiFi.status() != WL_CONNECTED; i++)
+		{
+			delay(500);
+			dbgPrint(".");
+		}
+
 		if (i == 60)
 		{
 			WiFi.disconnect();
 			digitalWrite(33, 1);
 			delay(1000);
 			digitalWrite(33, 0);
-			dbgPrint("\nReconnecting");
+			dbgPrintf("\nReconnecting, settings %d\n",currentNetSetting);
+			currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
 		}
 	}
 	digitalWrite(33, 1);
 
-	dbgPrintln("\nWiFi connected");
+	dbgPrintf("\nWiFi connected,settings %d\n",currentNetSetting);
 	digitalWrite(33, 1);
 
 }
@@ -201,25 +215,36 @@ void loop()
 	// if wifi is down, try reconnecting every 30 seconds
 	if (WiFi.status() != WL_CONNECTED && millis() > (lastTimeWifiChecked + 30000))
 	{
-		dbgPrintln("Reconnecting to WiFi...");
+		dbgPrintf("\nReconnecting, settings %d\n", currentNetSetting);
 		WiFi.disconnect();
-		WiFi.begin(ssid, password);
+		currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
+
+		// Configures static IP address
+		if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
+		{
+			dbgPrintln("STA Failed to configure");
+			BlinkNTimes(3);
+			delay(2000);
+			ESP.restart();
+			return;
+		}
+
+		WiFi.begin(NetSettings[currentNetSetting].ssid, NetSettings[currentNetSetting].password);
 		lastTimeWifiChecked = millis();
 	}
 
 	if (WiFi.status() == WL_CONNECTED)
 	{
-		digitalWrite(33, 0);
-		delay(10);
-		digitalWrite(33, 1);
+		BlinkNTimes(currentNetSetting+1);
 	}
 
 	delay(5000);
 
 	//--- Sending image to server
 	WiFiClient client;
-	if (!client.connect(serverHost, port)) {
-		dbgPrintln("Connection failed.");
+	if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
+	{
+		dbgPrintln("Connection to CamServer failed.");
 		return;
 	}
 
