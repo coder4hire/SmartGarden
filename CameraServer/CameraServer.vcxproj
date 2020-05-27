@@ -43,6 +43,7 @@
     <NMakeCleanCommandLine>$(LINARO_PATH)\bin\make.exe clean</NMakeCleanCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeIncludeSearchPath>include;.;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <IncludePath>$(LINARO_PATH)\arm-linux-gnueabihf\libc\usr\include;include;../ESP32CamClient</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakeBuildCommandLine>make.exe</NMakeBuildCommandLine>
@@ -51,7 +52,7 @@
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeIncludeSearchPath>include;.;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
     <ExecutablePath>$(PATH);$(LINARO_PATH)\bin</ExecutablePath>
-    <IncludePath>$(LINARO_PATH)\arm-linux-gnueabihf\libc\usr\include;include</IncludePath>
+    <IncludePath>$(LINARO_PATH)\arm-linux-gnueabihf\libc\usr\include;include;../ESP32CamClient</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
@@ -67,6 +68,7 @@
     <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ESP32CamClient\PacketHeader.h" />
     <ClInclude Include="ClientStream.h" />
     <ClInclude Include="Server.h" />
   </ItemGroup>

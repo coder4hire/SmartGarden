@@ -7,7 +7,6 @@
 #include <map>
 #include "ClientStream.h"
 
-#define PORT 9002
 #define MAX_SOCKETS_NUM 10
 
 class Server

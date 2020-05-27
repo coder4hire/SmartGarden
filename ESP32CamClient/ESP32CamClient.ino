@@ -13,20 +13,21 @@
 #include "soc/rtc_cntl_reg.h"  
 #include "esp_http_server.h"
 #include "pwd.h"
-
-#pragma pack(push, 1)
-struct PacketHeader
-{
-	uint32_t Preamble;
-	char Pwd[16];
-	int32_t Temperature;
-	int32_t Humidity;
-	uint32_t PayloadLength;
-};
-#pragma pack(pop)
+#include "PacketHeader.h"
 
 #define PIXFORMAT_JPEG_CONVERTED ((pixformat_t)(PIXFORMAT_JPEG+0x10000))
 time_t lastTimeWifiChecked;
+
+#if 1
+#define dbgPrint(x) Serial.print(x)
+#define dbgPrintln(x) Serial.println(x)
+#define dbgPrintf Serial.printf
+#else
+void noprintf(char* str, ...) {}
+#define dbgPrint(x)
+#define dbgPrintln(x)
+#define dbgPrintf noprintf
+#endif
 
 //const char* ssid = "***";
 //const char* password = "***";
@@ -76,21 +77,23 @@ static camera_fb_t* captureFrame()
 	fb = esp_camera_fb_get();
 	if (!fb)
 	{
-		Serial.println("Camera capture failed");
+		dbgPrint("Camera capture failed");
 		return NULL;
 	}
 
 	size_t out_len, out_width, out_height;
 	if (fb->format == PIXFORMAT_JPEG)
 	{
+		dbgPrintln("HW_JPG");
 		retVal = fb;
 	}
 	else
 	{
+		dbgPrintln("SW_JPG");
 		retVal = (camera_fb_t*)malloc(sizeof(camera_fb_t));
 		retVal->width = fb->width;
 		retVal->height = fb->height;
-		bool res = frame2jpg(fb, 80, &retVal->buf, &retVal->len);
+		bool res = frame2jpg(fb, 90, &retVal->buf, &retVal->len);
 		retVal->format = PIXFORMAT_JPEG_CONVERTED;
 		esp_camera_fb_return(fb);
 		if (!res)
@@ -143,8 +146,8 @@ void setup()
 	config.pin_reset = RESET_GPIO_NUM;
 	config.xclk_freq_hz = 20000000;
 	config.pixel_format = PIXFORMAT_JPEG;
-	config.frame_size = FRAMESIZE_SVGA;
-	config.jpeg_quality = 10;
+	config.frame_size = FRAMESIZE_UXGA;
+	config.jpeg_quality = 2;
 	config.fb_count = 2;
 
 	// Camera init
@@ -153,7 +156,7 @@ void setup()
 	pinMode(33, OUTPUT);
 	if (err != ESP_OK)
 	{
-		Serial.printf("Camera init failed with error 0x%x", err);
+		dbgPrintf("Camera init failed with error 0x%x", err);
 		BlinkNTimes(2);
 		delay(2000);
 		ESP.restart();
@@ -163,7 +166,7 @@ void setup()
 	// Configures static IP address
 	if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
 	{
-		Serial.println("STA Failed to configure");
+		dbgPrintln("STA Failed to configure");
 		BlinkNTimes(3);
 		delay(2000);
 		ESP.restart();
@@ -176,20 +179,19 @@ void setup()
 	for (int i = 0; WiFi.status() != WL_CONNECTED; i++)
 	{
 		delay(500);
-		Serial.print(".");
+		dbgPrint(".");
 		if (i == 60)
 		{
 			WiFi.disconnect();
 			digitalWrite(33, 1);
 			delay(1000);
 			digitalWrite(33, 0);
-			Serial.println("\nReconnecting");
+			dbgPrint("\nReconnecting");
 		}
 	}
 	digitalWrite(33, 1);
 
-	Serial.println("");
-	Serial.println("WiFi connected");
+	dbgPrintln("\nWiFi connected");
 	digitalWrite(33, 1);
 
 }
@@ -199,7 +201,7 @@ void loop()
 	// if wifi is down, try reconnecting every 30 seconds
 	if (WiFi.status() != WL_CONNECTED && millis() > (lastTimeWifiChecked + 30000))
 	{
-		Serial.println("Reconnecting to WiFi...");
+		dbgPrintln("Reconnecting to WiFi...");
 		WiFi.disconnect();
 		WiFi.begin(ssid, password);
 		lastTimeWifiChecked = millis();
@@ -216,19 +218,24 @@ void loop()
 
 	//--- Sending image to server
 	WiFiClient client;
-	if (client.connect(serverHost, port)) {
-		Serial.println("Connection failed.");
+	if (!client.connect(serverHost, port)) {
+		dbgPrintln("Connection failed.");
 		return;
 	}
 
 	camera_fb_t* frame = NULL;
 	if ((frame = captureFrame()) != NULL)
 	{
-		PacketHeader header = {0xCA3217AD, HOST_PWD};
-		header.PayloadLength = frame->len;
-		client.write((char*)&header,sizeof(header));
-		client.write(frame->buf, frame->len);
-		client.flush();
+		if (frame->len > 0)
+		{
+			dbgPrintf("Captured frame, size:%d\n", frame->len);
+			PacketHeader header = { 0xCA3217AD, HOST_PWD };
+			header.PayloadLength = frame->len;
+			client.write((char*)&header, sizeof(header));
+			client.write(frame->buf, frame->len);
+			client.flush();
+		}
+		freeFrame(frame);
 	}
 
 	client.stop();

@@ -59,6 +59,8 @@
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="NetUtils.cpp" />
+    <ClCompile Include="Modem.cpp" />
     <ClCompile Include="CommandsMenu.cpp" />
     <ClCompile Include="DomoticzDataParser.cpp" />
     <ClCompile Include="DomoticzInterface.cpp" />
@@ -83,6 +85,8 @@
     <ClInclude Include="DomoticzDataParser.h" />
     <ClInclude Include="DomoticzInterface.h" />
     <ClInclude Include="HWInterface.h" />
+    <ClInclude Include="Modem.h" />
+    <ClInclude Include="NetUtils.h" />
     <ClInclude Include="PinsDefinitions.h" />
     <ClInclude Include="LcdDisplay.h" />
     <ClInclude Include="main.h" />

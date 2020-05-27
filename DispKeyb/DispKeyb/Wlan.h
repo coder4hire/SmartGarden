@@ -6,9 +6,7 @@
 class CWlan
 {
 public:
-	~CWlan();
-
-	std::string GetWLanIP(const char* ifName);
+	std::string GetWlanIP();
 	void Enable();
 	void Disable();
 	void SetAPMode();
@@ -18,8 +16,6 @@ public:
 	static CWlan Inst;
 
 protected:
-	CWlan();
-	
-	bool IsInterfaceOnline(const char* interface);
+	CWlan();	
 };
 

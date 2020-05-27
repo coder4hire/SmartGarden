@@ -4,11 +4,14 @@
 #include <signal.h>
 #include <memory.h>
 #include "Server.h"
+#include "sys/stat.h"
 
 Server server;
 
 void sig_term_handler(int signum, siginfo_t* info, void* ptr)
 {
+    printf("Shutting down server...\n");
+    fflush(stdout);
     server.Close();
 }
 
@@ -21,7 +24,9 @@ int main()
     _sigact.sa_flags = SA_SIGINFO;
 
     sigaction(SIGTERM, &_sigact, NULL);
-    
+
+    mkdir("/tmp/cam0", 0766);
+
     server.Listen();
 	return 0;
 }

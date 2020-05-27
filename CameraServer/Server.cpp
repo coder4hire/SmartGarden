@@ -2,6 +2,10 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <memory.h>
+#include <stdio.h>
+
+#define SERVER_DATA
+#include "pwd.h"
 
 Server::Server()
 {
@@ -14,7 +18,7 @@ Server::~Server()
 bool Server::Listen()
 {
 	shouldStop = false;
-    unsigned long filter_ip = htonl(0xC0A80328);
+    unsigned long filter_ip = 0;// htonl(0xC0A80328);
 
     memset(fds, 0, sizeof(fds));
 
@@ -24,13 +28,15 @@ bool Server::Listen()
         return false;
     }
 
+    int enabled = 1;
+    setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
+
     struct sockaddr_in serv_addr;
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(PORT);
+    serv_addr.sin_port = htons(port);
 
-    //bind the socket to localhost port 8888
     if (bind(listener, (struct sockaddr*) & serv_addr, sizeof(serv_addr)) < 0)
     {
         perror("bind failed");
@@ -48,9 +54,11 @@ bool Server::Listen()
     fds[0].events = POLLIN;
     fds_len = 1;
 
+    printf("Listening...\n");
+
     while (!shouldStop)
     {
-        if (poll(fds, fds_len, 100) > 0)
+        if (poll(fds, fds_len, 100) >= 0)
         {
             // Checking incoming connection
             if (fds[0].revents == POLLIN)
@@ -59,14 +67,16 @@ bool Server::Listen()
                 struct sockaddr_in peer_addr = {};
                 socklen_t addrlen = sizeof(peer_addr);
 
-                if ((client_socket = accept(listener, (struct sockaddr*) & peer_addr, (socklen_t*)&addrlen)) < 0)
+                if ((client_socket = accept(listener, (struct sockaddr*) &peer_addr, (socklen_t*)&addrlen)) >= 0)
                 {
-                    if (peer_addr.sin_addr.s_addr == filter_ip)
+                    if (filter_ip==0 || peer_addr.sin_addr.s_addr == filter_ip)
                     {
+                        printf("Connection accepted\n");
                         AcceptConnection(client_socket);
                     }
                     else
                     {
+                        printf("Connection rejected\n");
                         close(client_socket);
                     }
                 }
@@ -81,19 +91,32 @@ bool Server::Listen()
                     if (stream_it != clientStreams.end())
                     {
                         ClientStream& str = stream_it->second;
-                        int rc = recv(fds[i].fd, str.Buffer, sizeof(str.Buffer), 0);
-                        if (rc < 0)
+                        unsigned char buffer[128 * 1024];
+
+                        int rc = recv(fds[i].fd, buffer,128*1024, 0);
+                        if (rc <= 0)
                         {
+                            if (rc < 0)
+                            {
+                                printf("\nError on socket %d (%d). Closing.\n", i, fds[i].fd);
+                            }
+                            else
+                            {
+                                printf("\nClosed connection on socket %d (%d). Closing.\n", i, fds[i].fd);
+                            }
                             // Close connection
+                            
                             clientStreams.erase(stream_it);
+                            close(fds[i].fd);
                             fds[i].fd = 0;
                         }
                         else
                         {
-                            if (!str.OnDataReceived(rc))
+                            if (!str.OnDataReceived(buffer, rc))
                             {
                                 // Close connection if Data processing is over
                                 clientStreams.erase(stream_it);
+                                close(fds[i].fd);
                                 fds[i].fd = 0;
                             }
                         }
@@ -117,6 +140,14 @@ bool Server::Listen()
         }
     }
 
+    for (int i = 0; i < fds_len; i++)
+    {
+        if (fds[i].fd)
+        {
+            close(fds[i].fd);
+        }
+    }
+
     return true;
 }
 
@@ -132,6 +163,7 @@ bool Server::AcceptConnection(int socket)
         fds[fds_len].fd = socket;
         fds[fds_len].events = POLLIN;
         clientStreams[socket] = ClientStream();
+        fds_len++;
         return true;
     }
     return false;
