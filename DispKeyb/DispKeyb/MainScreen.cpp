@@ -3,6 +3,8 @@
 #include "DomoticzDataParser.h"
 #include "stdio.h"
 #include "MainMenu.h"
+#include "RestartDlg.h"
+#include "OSUtils.h"
 
 CMainScreen::CMainScreen()
 {
@@ -16,7 +18,7 @@ CMainScreen::~CMainScreen()
 
 bool CMainScreen::OnEnter()
 {
-	CDomoticzDataParser::Inst.RefreshDataIfNeeded();
+	OSUtils::CheckAndSpawnChildProcesses();
 	return CScreenBase::OnEnter();
 }
 
@@ -38,13 +40,19 @@ bool CMainScreen::OnKeyPress(int key)
 		CWlan::Inst.Enable();
 		Paint();
 		break;
+	case KEY_ABORT | KEY_CANCEL | KEY_OK:
+		{
+			CRestartDlg dlg;
+			dlg.Run();
+			lcd.Clear();
+			Paint();
+		}
 	}
 	return true;
 }
 
 void CMainScreen::OnNonPreciseTimer()
 {
-	CDomoticzDataParser::Inst.RefreshDataIfNeeded();
 	Paint();
 }
 
@@ -67,14 +75,15 @@ void CMainScreen::Paint()
 		lcd.GotoXY(0, 3);
 		lcd.Printf(CWlan::Inst.IsEnabled() ? "WiFi" : "----");
 
+		//--- Synchronized data
+		SensorsData data = CDomoticzDataParser::Inst.GetSensorsData();
 		char strTemp[20];
-		sprintf(strTemp, "R:%5.1lf", CDomoticzDataParser::Inst.RoomTemp);
+		sprintf(strTemp, "R:%5.1lf", data.RoomTemp);
 		lcd.GotoXY(13, 0);
 		lcd.Printf(strTemp);
 
-		sprintf(strTemp, "O:%5.1lf", CDomoticzDataParser::Inst.OutsideTemp);
+		sprintf(strTemp, "O:%5.1lf", data.OutsideTemp);
 		lcd.GotoXY(13, 1);
 		lcd.Printf(strTemp);
-
 	}
 }

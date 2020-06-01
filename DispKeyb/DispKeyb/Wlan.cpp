@@ -1,7 +1,7 @@
 #include "Wlan.h"
 
 #include <stdlib.h>
-#include "NetUtils.h"
+#include "OSUtils.h"
 
 CWlan CWlan::Inst;
 
@@ -11,17 +11,17 @@ CWlan::CWlan()
 
 std::string CWlan::GetWlanIP()
 {
-	return NetUtils::GetIfaceIP(MAIN_WLAN);
+	return OSUtils::GetIfaceIP(MAIN_WLAN);
 }
 
 void CWlan::Enable()
 {
-	system("ifconfig "MAIN_WLAN" up");
+	system("ifconfig " MAIN_WLAN " up");
 }
 
 void CWlan::Disable()
 {
-	system("ifconfig "MAIN_WLAN" down");
+	system("ifconfig " MAIN_WLAN " down");
 }
 
 void CWlan::SetAPMode()
@@ -38,5 +38,5 @@ void CWlan::SetClientMode()
 
 bool CWlan::IsEnabled()
 {
-	return NetUtils::IsInterfaceOnline(MAIN_WLAN);
+	return OSUtils::IsInterfaceOnline(MAIN_WLAN);
 }

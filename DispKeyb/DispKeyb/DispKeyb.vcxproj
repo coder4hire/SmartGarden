@@ -59,7 +59,8 @@
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NetUtils.cpp" />
+    <ClCompile Include="CRestartDlg.cpp" />
+    <ClCompile Include="OSUtils.cpp" />
     <ClCompile Include="Modem.cpp" />
     <ClCompile Include="CommandsMenu.cpp" />
     <ClCompile Include="DomoticzDataParser.cpp" />
@@ -72,6 +73,7 @@
     <ClCompile Include="MenuBase.cpp" />
     <ClCompile Include="MessageBox.cpp" />
     <ClCompile Include="NetworkSettings.cpp" />
+    <ClCompile Include="RestartDlg.cpp" />
     <ClCompile Include="ScreenBase.cpp" />
     <ClCompile Include="SoundMenu.cpp" />
     <ClCompile Include="WiFiConfigMenu.cpp" />
@@ -82,11 +84,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandsMenu.h" />
+    <ClInclude Include="RestartDlg.h" />
     <ClInclude Include="DomoticzDataParser.h" />
     <ClInclude Include="DomoticzInterface.h" />
     <ClInclude Include="HWInterface.h" />
     <ClInclude Include="Modem.h" />
-    <ClInclude Include="NetUtils.h" />
+    <ClInclude Include="OSUtils.h" />
     <ClInclude Include="PinsDefinitions.h" />
     <ClInclude Include="LcdDisplay.h" />
     <ClInclude Include="main.h" />

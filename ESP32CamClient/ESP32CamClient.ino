@@ -14,6 +14,9 @@
 #include "esp_http_server.h"
 #include "PacketHeader.h"
 
+// Deep sleep time in usec
+#define TIME_TO_SLEEP  (20*1000000)
+
 struct NetSettingsStruct
 {
 	const char* ssid;
@@ -26,7 +29,7 @@ struct NetSettingsStruct
 
 #include "pwd.h"
 
-int currentNetSetting=0;
+int currentNetSetting=1; // Start looking from this settings preset
 int netSettingsNum = sizeof(NetSettings) / sizeof(NetSettingsStruct);
 
 #define PIXFORMAT_JPEG_CONVERTED ((pixformat_t)(PIXFORMAT_JPEG+0x10000))
@@ -64,15 +67,15 @@ IPAddress secondaryDNS(0, 0, 0, 0); //optional
 #define PCLK_GPIO_NUM     22
 
 
-void BlinkNTimes(int n)
+void BlinkNTimes(int n, int interval=300)
 {
 	digitalWrite(33, 1);
 	for (int i = 0; i < n; i++)
 	{
 		digitalWrite(33, 0);
-		delay(300);
+		delay(interval);
 		digitalWrite(33, 1);
-		delay(300);
+		delay(interval);
 	}
 }
 
@@ -175,6 +178,7 @@ void setup()
 	digitalWrite(33, 0);
 	while(WiFi.status() != WL_CONNECTED)
 	{
+		currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
 		// Configures static IP address
 		if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
 		{
@@ -200,7 +204,6 @@ void setup()
 			delay(1000);
 			digitalWrite(33, 0);
 			dbgPrintf("\nReconnecting, settings %d\n",currentNetSetting);
-			currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
 		}
 	}
 	digitalWrite(33, 1);
@@ -235,16 +238,15 @@ void loop()
 
 	if (WiFi.status() == WL_CONNECTED)
 	{
-		BlinkNTimes(currentNetSetting+1);
+		BlinkNTimes(currentNetSetting+1,100);
 	}
-
-	delay(5000);
 
 	//--- Sending image to server
 	WiFiClient client;
 	if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
 	{
 		dbgPrintln("Connection to CamServer failed.");
+		delay(5000);
 		return;
 	}
 
@@ -258,10 +260,24 @@ void loop()
 			header.PayloadLength = frame->len;
 			client.write((char*)&header, sizeof(header));
 			client.write(frame->buf, frame->len);
+			client.setNoDelay(true);
 			client.flush();
 		}
 		freeFrame(frame);
+		
+		client.stop();
+		delay(2000);
+
+		// Go to deep sleep after successfull transaction
+		dbgPrintln("Go to sleep...");
+		Serial.flush();
+
+		esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP);
+		esp_deep_sleep_start();
+
+		return;
 	}
 
 	client.stop();
+	delay(5000);
 }

@@ -1,52 +1,67 @@
 #include "DomoticzDataParser.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <future>
+#include <string.h>
 
 CDomoticzDataParser CDomoticzDataParser::Inst;
 
 CDomoticzDataParser::CDomoticzDataParser()
 {
-	Temperature = 0;
-	CPULoad = 0;
-	RoomTemp = 0;
-	OutsideTemp = 0;
+	memset(&sensors, 0, sizeof(sensors));
 	
-	oldTime = 0;
-	updateInterval = 5; // seconds
+	StartUpdatingThread();
 }
 
 
 CDomoticzDataParser::~CDomoticzDataParser()
 {
+	StopUpdatingThread();
+}
+
+SensorsData CDomoticzDataParser::GetSensorsData()
+{
+	std::lock_guard<std::mutex> lock(mtx);
+	return sensors;
+}
+
+void CDomoticzDataParser::StartUpdatingThread()
+{
+	updateInterval = 5; // seconds
+	readingThread = std::thread([this] {this->LoadData(); });
+}
+
+void CDomoticzDataParser::StopUpdatingThread()
+{
+	updateInterval = 0;
+	if (readingThread.joinable())
+	{
+		readingThread.join();
+	}
 }
 
 void CDomoticzDataParser::LoadData()
 {
-	double temp = 0, load = 0;
-	int i = 0;
-	int reTries = 5;
-	FILE* fp = NULL;
-
-	for (i = 0; !(fp = fopen("/tmp/dm_values", "r")) && i<reTries; i++)
+	while (updateInterval != 0)
 	{
-		usleep(500000);
-	}
-	if (fp)
-	{
-		fscanf(fp, "CPUTemp:%lf\nCPULoad:%lf\nRoomTemp:%lf\nOutsideTemp:%lf", &Temperature, &CPULoad,&RoomTemp,&OutsideTemp);
-		fclose(fp);
-		time(&oldTime);
-	}
+		double temp = 0, load = 0;
+		int i = 0;
+		int reTries = 5;
+		FILE* fp = NULL;
 
-}
+		for (i = 0; !(fp = fopen("/tmp/dm_values", "r")) && i < reTries && updateInterval != 0; i++)
+		{
+			usleep(500000);
+		}
+		if (fp)
+		{
+			std::lock_guard<std::mutex> lock(mtx);
+			fscanf(fp, "CPUTemp:%lf\nCPULoad:%lf\nRoomTemp:%lf\nOutsideTemp:%lf",
+				&sensors.Temperature, &sensors.CPULoad, &sensors.RoomTemp, &sensors.OutsideTemp);
+			fclose(fp);
+			time(&sensors.lastTimeUpdated);
+		}
 
-void CDomoticzDataParser::RefreshDataIfNeeded()
-{
-	time_t now;
-	time(&now);
-	if (now - oldTime > updateInterval)
-	{
-		oldTime = now;
-		LoadData();
+		sleep(updateInterval);
 	}
 }

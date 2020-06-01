@@ -1,8 +1,11 @@
 #pragma once
 #include <string>
 
-namespace NetUtils
+namespace OSUtils
 {
 	bool IsInterfaceOnline(const char* interface);
 	std::string GetIfaceIP(const char* ifName);
+
+	void CheckAndSpawnChildProcesses();
+	int GetProcIdByName(std::string procName);
 }

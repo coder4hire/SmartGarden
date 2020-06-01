@@ -6,7 +6,7 @@ OBJECTS = $(addsuffix .o,$(basename $(SRC_FILES)))
 PATH:=$(PATH):$(LINARO_PATH)/bin
 CC=arm-linux-gnueabihf-gcc.exe
 LD=arm-linux-gnueabihf-g++.exe
-CFLAGS=-I./include
+CFLAGS=-I./include -std=c++11
 LIB_FLAGS=-Llib -LLinuxLibs -lwiringPi -lwiringPiDev -lpthread -lasound
 
 all: prep DispKeyb

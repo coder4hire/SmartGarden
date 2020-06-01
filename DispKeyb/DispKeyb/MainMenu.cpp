@@ -4,6 +4,7 @@
 #include "MainScreen.h"
 #include "SoundMenu.h"
 #include "MessageBox.h"
+#include "RestartDlg.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,14 +21,9 @@ bool CMainMenu::OnKeyPress(int key)
 {
 	if (key == (KEY_ABORT | KEY_CANCEL | KEY_OK))
 	{
-		if (CMessageBox::Inst.Show("Shutdown system ?"))
-		{
-			system("shutdown 0");
-		}
-		else
-		{
-			Paint();
-		}
+		CRestartDlg dlg;
+		dlg.Run();
+		Paint();
 	}
 	if (!CMenuBase::OnKeyPress(key))
 	{

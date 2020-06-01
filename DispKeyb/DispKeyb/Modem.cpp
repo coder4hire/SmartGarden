@@ -1,7 +1,7 @@
 #include "Modem.h"
 
 #include <stdlib.h>
-#include "NetUtils.h"
+#include "OSUtils.h"
 
 CModem CModem::Inst;
 
@@ -12,7 +12,7 @@ CModem::CModem()
 
 std::string CModem::GetModemIP()
 {
-	return NetUtils::GetIfaceIP(MODEM_IFACE);
+	return OSUtils::GetIfaceIP(MODEM_IFACE);
 }
 
 void CModem::Enable()
@@ -28,5 +28,5 @@ void CModem::Disable()
 
 bool CModem::IsEnabled()
 {
-	return NetUtils::IsInterfaceOnline(MODEM_IFACE);
+	return OSUtils::IsInterfaceOnline(MODEM_IFACE);
 }
