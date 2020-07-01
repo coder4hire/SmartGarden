@@ -3,6 +3,7 @@
 // Thanks to author
 //
 
+#include "DHT.h"
 #include "esp_camera.h"
 #include <WiFi.h>
 #include "esp_timer.h"
@@ -15,7 +16,8 @@
 #include "PacketHeader.h"
 
 // Deep sleep time in usec
-#define TIME_TO_SLEEP  (20*1000000)
+#define TIME_TO_SLEEP  (60*1000000)
+
 
 struct NetSettingsStruct
 {
@@ -34,6 +36,8 @@ int netSettingsNum = sizeof(NetSettings) / sizeof(NetSettingsStruct);
 
 #define PIXFORMAT_JPEG_CONVERTED ((pixformat_t)(PIXFORMAT_JPEG+0x10000))
 time_t lastTimeWifiChecked;
+
+DHT dht(13, DHT22);
 
 #if 1
 #define dbgPrint(x) Serial.print(x)
@@ -129,6 +133,23 @@ static void freeFrame(camera_fb_t* fb)
 	}
 }
 
+void ReadDHTValues(PacketHeader& header)
+{
+	// Reading temperature or humidity takes about 2           50 milliseconds!
+	float h = NAN;
+	float t = NAN;
+	int retries = 10;
+	while ((isnan(h) || isnan(t)) && retries--)
+	{
+		h = dht.readHumidity();
+		t = dht.readTemperature();
+	}
+
+	dbgPrintf("Humidity: %.1f%%  Temperature: %.1f °C\n", h, t);
+	header.Temperature = t;
+	header.Humidity = h;
+}
+
 void setup()
 {
 	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
@@ -211,10 +232,15 @@ void setup()
 	dbgPrintf("\nWiFi connected,settings %d\n",currentNetSetting);
 	digitalWrite(33, 1);
 
+	// Initializing DHT Sensor
+	dht.begin();
 }
 
 void loop()
 {
+	PacketHeader header = { 0xCA3217AD, HOST_PWD };
+	ReadDHTValues(header);
+
 	// if wifi is down, try reconnecting every 30 seconds
 	if (WiFi.status() != WL_CONNECTED && millis() > (lastTimeWifiChecked + 30000))
 	{
@@ -256,7 +282,6 @@ void loop()
 		if (frame->len > 0)
 		{
 			dbgPrintf("Captured frame, size:%d\n", frame->len);
-			PacketHeader header = { 0xCA3217AD, HOST_PWD };
 			header.PayloadLength = frame->len;
 			client.write((char*)&header, sizeof(header));
 			client.write(frame->buf, frame->len);
