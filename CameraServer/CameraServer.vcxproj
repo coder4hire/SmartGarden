@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientStream.cpp" />
+    <ClCompile Include="DomoticzInterface.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Server.cpp" />
   </ItemGroup>
@@ -70,6 +71,7 @@
   <ItemGroup>
     <ClInclude Include="..\ESP32CamClient\PacketHeader.h" />
     <ClInclude Include="ClientStream.h" />
+    <ClInclude Include="DomoticzInterface.h" />
     <ClInclude Include="Server.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -17,7 +17,7 @@
 
 // Deep sleep time in usec
 #define TIME_TO_SLEEP  (60*1000000)
-
+#define CONNECTION_RETRY_INTERVAL (10*1000000)
 
 struct NetSettingsStruct
 {
@@ -272,7 +272,8 @@ void loop()
 	if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
 	{
 		dbgPrintln("Connection to CamServer failed.");
-		delay(5000);
+		esp_sleep_enable_timer_wakeup(CONNECTION_RETRY_INTERVAL);
+		esp_deep_sleep_start();
 		return;
 	}
 
@@ -291,7 +292,6 @@ void loop()
 		freeFrame(frame);
 		
 		client.stop();
-		delay(2000);
 
 		// Go to deep sleep after successfull transaction
 		dbgPrintln("Go to sleep...");
