@@ -71,8 +71,15 @@ bool Server::Listen()
                 {
                     if (filter_ip==0 || peer_addr.sin_addr.s_addr == filter_ip)
                     {
-                        printf("Connection accepted\n");
-                        AcceptConnection(client_socket);
+                        if (!AcceptConnection(client_socket))
+                        {
+                            printf("Connection rejected: no free client sockets\n");
+                            close(client_socket);
+                        }
+                        else
+                        {
+                            printf("Connection accepted\n");
+                        }
                     }
                     else
                     {
@@ -94,15 +101,16 @@ bool Server::Listen()
                         unsigned char buffer[128 * 1024];
 
                         int rc = recv(fds[i].fd, buffer,128*1024, 0);
+                        //printf("\nGot packet:%d\n", rc);
                         if (rc <= 0)
                         {
                             if (rc < 0)
                             {
-                                printf("\nError on socket %d (%d). Closing.\n", i, fds[i].fd);
+                                printf("*** Error on socket %d (%d). Closing.\n\n", i, fds[i].fd);
                             }
                             else
                             {
-                                printf("\nClosed connection on socket %d (%d). Closing.\n", i, fds[i].fd);
+                                printf("Closed connection on socket %d (%d). Closing.\n\n", i, fds[i].fd);
                             }
                             // Close connection
                             

@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////
+ ///////////////////////////////////////////////////////////////////
 // Camera interaction code parts were taken from http://psenyukov.ru/%D0%B2%D0%B8%D0%B4%D0%B5%D0%BE%D0%BA%D0%B0%D0%BC%D0%B5%D1%80%D0%B0-%D0%BD%D0%B0-esp32/
 // Thanks to author
 //
@@ -15,9 +15,12 @@
 #include "esp_http_server.h"
 #include "PacketHeader.h"
 
-// Deep sleep time in usec
-#define TIME_TO_SLEEP  (60*1000000)
-#define CONNECTION_RETRY_INTERVAL (10*1000000)
+// Deep/Light sleep time in usec
+#define TIME_TO_SLEEP  (20*1000000)
+#define CAMSERVER_CONNECTION_RETRY_INTERVAL (10*1000000)
+
+// WIFI reconnection time, in ms
+#define WIFI_RECONNECT_TIME 30000
 
 struct NetSettingsStruct
 {
@@ -35,7 +38,9 @@ int currentNetSetting=1; // Start looking from this settings preset
 int netSettingsNum = sizeof(NetSettings) / sizeof(NetSettingsStruct);
 
 #define PIXFORMAT_JPEG_CONVERTED ((pixformat_t)(PIXFORMAT_JPEG+0x10000))
-time_t lastTimeWifiChecked;
+unsigned long lastTimeWifiChecked=0;
+bool isConnected=false;
+bool isCameraOn=false;
 
 DHT dht(13, DHT22);
 
@@ -71,7 +76,7 @@ IPAddress secondaryDNS(0, 0, 0, 0); //optional
 #define PCLK_GPIO_NUM     22
 
 
-void BlinkNTimes(int n, int interval=300)
+void blinkNTimes(int n, int interval=300)
 {
 	digitalWrite(33, 1);
 	for (int i = 0; i < n; i++)
@@ -92,7 +97,7 @@ static camera_fb_t* captureFrame()
 	fb = esp_camera_fb_get();
 	if (!fb)
 	{
-		dbgPrint("Camera capture failed");
+		dbgPrintln("Camera capture failed");
 		return NULL;
 	}
 
@@ -133,7 +138,7 @@ static void freeFrame(camera_fb_t* fb)
 	}
 }
 
-void ReadDHTValues(PacketHeader& header)
+void readDHTValues(PacketHeader& header)
 {
 	// Reading temperature or humidity takes about 2           50 milliseconds!
 	float h = NAN;
@@ -145,17 +150,15 @@ void ReadDHTValues(PacketHeader& header)
 		t = dht.readTemperature();
 	}
 
-	dbgPrintf("Humidity: %.1f%%  Temperature: %.1f °C\n", h, t);
+	dbgPrintf("Humidity: %.1f%%  Temperature: %.1f C\n", h, t);
 	header.Temperature = t;
 	header.Humidity = h;
 }
 
-void setup()
-{
-	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
-	Serial.begin(115200);
-	Serial.setDebugOutput(false);
+void initCamera()
+{
+	digitalWrite(PWDN_GPIO_NUM,0);
 
 	camera_config_t config;
 	config.ledc_channel = LEDC_CHANNEL_0;
@@ -185,124 +188,192 @@ void setup()
 	// Camera init
 	esp_err_t err = esp_camera_init(&config);
 
-	pinMode(33, OUTPUT);
 	if (err != ESP_OK)
 	{
 		dbgPrintf("Camera init failed with error 0x%x", err);
-		BlinkNTimes(2);
+		blinkNTimes(2);
 		delay(2000);
 		ESP.restart();
 		return;
 	}
+}
+
+void powerOnCamera()
+{
+	if(!isCameraOn)
+	{
+		digitalWrite(PWDN_GPIO_NUM, LOW);
+		isCameraOn=true;
+		delay(1000);
+	}
+}
+void powerOffCamera()
+{
+	//esp_camera_deinit();
+	digitalWrite(PWDN_GPIO_NUM, HIGH);
+	isCameraOn=false;
+}
+
+
+void setup()
+{
+	// Set flash off
+	pinMode(4,INPUT_PULLDOWN);
+
+	// Configure status LED
+	pinMode(33, OUTPUT);
+
+	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+
+	pinMode(PWDN_GPIO_NUM,OUTPUT);
+	powerOnCamera();
+
+	Serial.begin(115200);
+	Serial.setDebugOutput(false);
+
+	initCamera();	
 
 	// Wi-Fi connection
-	digitalWrite(33, 0);
-	while(WiFi.status() != WL_CONNECTED)
-	{
-		currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
-		// Configures static IP address
-		if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
-		{
-			dbgPrintln("STA Failed to configure");
-			BlinkNTimes(3);
-			delay(2000);
-			ESP.restart();
-			return;
-		}
-		WiFi.begin(NetSettings[currentNetSetting].ssid, NetSettings[currentNetSetting].password);
+	// digitalWrite(33, 0);
+	// while(WiFi.status() != WL_CONNECTED)
+	// {
+	// 	currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
+	// 	// Configures static IP address
+	// 	if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
+	// 	{
+	// 		dbgPrintln("STA Failed to configure");
+	// 		blinkNTimes(3);
+	// 		delay(2000);
+	// 		ESP.restart();
+	// 		return;
+	// 	}
+	// 	WiFi.begin(NetSettings[currentNetSetting].ssid, NetSettings[currentNetSetting].password);
 	
-		int i = 0;
-		for (i = 0; i < 60 && WiFi.status() != WL_CONNECTED; i++)
-		{
-			delay(500);
-			dbgPrint(".");
-		}
+	// 	int i = 0;
+	// 	for (i = 0; i < 60 && WiFi.status() != WL_CONNECTED; i++)
+	// 	{
+	// 		delay(500);
+	// 		dbgPrint(".");
+	// 	}
 
-		if (i == 60)
-		{
-			WiFi.disconnect();
-			digitalWrite(33, 1);
-			delay(1000);
-			digitalWrite(33, 0);
-			dbgPrintf("\nReconnecting, settings %d\n",currentNetSetting);
-		}
-	}
-	digitalWrite(33, 1);
+	// 	if (i == 60)
+	// 	{
+	// 		WiFi.disconnect();
+	// 		digitalWrite(33, 1);
+	// 		delay(1000);
+	// 		digitalWrite(33, 0);
+	// 		dbgPrintf("\nReconnecting, settings %d\n",currentNetSetting);
+	// 	}
+	// }
+	// digitalWrite(33, 1);
 
-	dbgPrintf("\nWiFi connected,settings %d\n",currentNetSetting);
+	// dbgPrintf("\nWiFi connected,settings %d\n",currentNetSetting);
 	digitalWrite(33, 1);
 
 	// Initializing DHT Sensor
 	dht.begin();
 }
 
+void reconnectIfNeeded()
+{
+	// if wifi is down, try reconnecting every 30 seconds
+	if(WiFi.status() != WL_CONNECTED)
+	{
+		unsigned long now = millis();
+		if (!lastTimeWifiChecked || 
+			now > (lastTimeWifiChecked + WIFI_RECONNECT_TIME) || now < lastTimeWifiChecked)
+		{
+			if(!isConnected)
+			{
+				// If we successfully connected to some wifi before, let's retry same configuration again first
+				currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
+			}
+			dbgPrintf("\nReconnecting, settings %d\n", currentNetSetting+1);
+			
+			WiFi.disconnect();
+			// Configures static IP address
+			if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
+			{
+				dbgPrintln("STA Failed to configure");
+				blinkNTimes(3);
+				delay(2000);
+				ESP.restart();
+				return;
+			}
+
+			digitalWrite(33, 0);
+			isConnected=false;
+			WiFi.begin(NetSettings[currentNetSetting].ssid, NetSettings[currentNetSetting].password);
+			lastTimeWifiChecked = millis();
+		}
+	}
+	else if (!isConnected)
+	{
+		dbgPrintf("\nWiFi connected,settings %d\n",currentNetSetting+1);
+		blinkNTimes(currentNetSetting+1,100);
+		isConnected=true;
+	}
+}
+
 void loop()
 {
 	PacketHeader header = { 0xCA3217AD, HOST_PWD };
-	ReadDHTValues(header);
+	readDHTValues(header);
 
-	// if wifi is down, try reconnecting every 30 seconds
-	if (WiFi.status() != WL_CONNECTED && millis() > (lastTimeWifiChecked + 30000))
+	reconnectIfNeeded();
+
+	//--- Sending image to server
+	if(isConnected)
 	{
-		dbgPrintf("\nReconnecting, settings %d\n", currentNetSetting);
-		WiFi.disconnect();
-		currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
-
-		// Configures static IP address
-		if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
+		WiFiClient client;
+		if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
 		{
-			dbgPrintln("STA Failed to configure");
-			BlinkNTimes(3);
-			delay(2000);
-			ESP.restart();
+			dbgPrintln("Connection to CamServer failed.");
+			esp_sleep_enable_timer_wakeup(CAMSERVER_CONNECTION_RETRY_INTERVAL);
+			//esp_deep_sleep_start();
+			esp_light_sleep_start();
 			return;
 		}
 
-		WiFi.begin(NetSettings[currentNetSetting].ssid, NetSettings[currentNetSetting].password);
-		lastTimeWifiChecked = millis();
-	}
+ 		client.setNoDelay(true);
+ 		//client.setTimeout(WIFI_SOCKET_TIMEOUT);
 
-	if (WiFi.status() == WL_CONNECTED)
-	{
-		BlinkNTimes(currentNetSetting+1,100);
-	}
-
-	//--- Sending image to server
-	WiFiClient client;
-	if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
-	{
-		dbgPrintln("Connection to CamServer failed.");
-		esp_sleep_enable_timer_wakeup(CONNECTION_RETRY_INTERVAL);
-		esp_deep_sleep_start();
-		return;
-	}
-
-	camera_fb_t* frame = NULL;
-	if ((frame = captureFrame()) != NULL)
-	{
-		if (frame->len > 0)
+		powerOnCamera();
+		camera_fb_t* frame = NULL;
+		if ((frame = captureFrame()) != NULL)
 		{
-			dbgPrintf("Captured frame, size:%d\n", frame->len);
-			header.PayloadLength = frame->len;
-			client.write((char*)&header, sizeof(header));
-			client.write(frame->buf, frame->len);
-			client.setNoDelay(true);
-			client.flush();
+			if (frame->len > 0)
+			{
+				dbgPrintf("Captured frame, size:%d\n", frame->len);
+				header.PayloadLength = frame->len;
+				client.write((char*)&header, sizeof(header));
+				client.write(frame->buf, frame->len);
+				client.flush();
+				dbgPrintln("Packet is sent");
+			}
+			delay(5000);				
+			client.stop();
+
+			freeFrame(frame);
+			powerOffCamera();
+				
+			// Go to sleep after successfull transaction
+			dbgPrintln("Go to sleep...");
+			Serial.flush();
+
+			esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP);
+			//esp_deep_sleep_start();
+			int ret = esp_light_sleep_start();
+			dbgPrintf("Light sleep: %d\n",ret);
+			return;
 		}
-		freeFrame(frame);
+		else
+		{
+			esp_camera_deinit();
+			initCamera();
+		}
 		
 		client.stop();
-
-		// Go to deep sleep after successfull transaction
-		dbgPrintln("Go to sleep...");
-		Serial.flush();
-
-		esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP);
-		esp_deep_sleep_start();
-
-		return;
 	}
-
-	client.stop();
 	delay(5000);
 }

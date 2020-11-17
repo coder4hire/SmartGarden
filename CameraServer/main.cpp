@@ -25,7 +25,7 @@ int main()
 
     sigaction(SIGTERM, &_sigact, NULL);
 
-    mkdir("/tmp/cam0", 0766);
+    mkdir("/tmp/cam0", 0777);
 
     server.Listen();
 	return 0;

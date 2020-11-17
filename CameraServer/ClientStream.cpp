@@ -24,6 +24,7 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 
 	if (packet.size() > MAX_PACKET_SIZE)
 	{
+		printf("Too large packet:%d\n", packet.size());
 		return false;
 	}
 
@@ -49,7 +50,7 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 					printf("Saving image, len: %d\n", header->PayloadLength);
 					fwrite(&packet[sizeof(PacketHeader)], header->PayloadLength, 1, fp);
 					fclose(fp);
-					return true;
+					return false;
 				}
 				else
 				{
