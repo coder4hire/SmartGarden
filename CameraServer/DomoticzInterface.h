@@ -11,6 +11,8 @@ public:
 	bool SendTemperature(int idx, int temp);
 	bool SendHumidity(int idx, int hum);
 
+	bool SendTempHumidity(int idx, int temp, int hum);
+
 protected:
 	std::string domoticzIP;
 	unsigned short port;

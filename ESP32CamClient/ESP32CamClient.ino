@@ -148,6 +148,7 @@ void readDHTValues(PacketHeader& header)
 	{
 		h = dht.readHumidity();
 		t = dht.readTemperature();
+		delay(500);
 	}
 
 	dbgPrintf("Humidity: %.1f%%  Temperature: %.1f C\n", h, t);

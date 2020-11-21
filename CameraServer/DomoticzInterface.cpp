@@ -18,37 +18,62 @@ CDomoticzInterface::~CDomoticzInterface()
 
 bool CDomoticzInterface::SendTemperature(int idx, int temp)
 {
-	/* Now specify the POST data */
+	/* Now specify the request data */
 	std::string str = "/json.htm?type=command&param=udevice&idx=";
-	str += str += std::to_string(idx);
+	str += std::to_string(idx);
 	str += "&nvalue=0&svalue=";
 	str += std::to_string(temp);
 	
 	// TODO: Process response
 	std::string resp = SendHTTPRequest(str);
-	printf("%s", resp.c_str());
+	if (resp.find("\"status\" : \"OK\"") == -1)
+	{
+		printf("%s", resp.c_str());
+		return false;
+	}
 
-	return false;
+	return true;
 }
 
 bool CDomoticzInterface::SendHumidity(int idx, int hum)
 {
-	/* Now specify the POST data */
-	std::string str = "/json.htm?command&param=udevice&idx=";
-	str += str += std::to_string(idx);
+	/* Now specify the request data */
+	std::string str = "/json.htm?type=command&param=udevice&idx=";
+	str += std::to_string(idx);
 	str += "&nvalue=";
 	str += std::to_string(hum);
 	str += "&svalue=";
 	str += std::to_string(Hum2Status(hum));
 
+	// TODO: Process response
+	std::string resp = SendHTTPRequest(str);
+	if (resp.find("\"status\" : \"OK\"") == -1)
+	{
+		printf("%s", resp.c_str());
+		return false;
+	}
+
+	return true;
+}
+
+bool CDomoticzInterface::SendTempHumidity(int idx, int temp, int hum)
+{
+	/* Now specify the request data */
+	std::string str = "/json.htm?type=command&param=udevice&idx=";
+	str += std::to_string(idx);
+	str += "&nvalue=0&svalue=";
+	str += std::to_string(temp)+";"+ std::to_string(hum)+";"+ std::to_string(Hum2Status(hum));
 
 	// TODO: Process response
 	std::string resp = SendHTTPRequest(str);
-	printf("%s", resp.c_str());
+	if (resp.find("\"status\" : \"OK\"") == -1)
+	{
+		printf("%s", resp.c_str());
+		return false;
+	}
 
-	return false;
+	return true;
 }
-
 
 std::string CDomoticzInterface::SendHTTPRequest(std::string& request)
 {
@@ -130,7 +155,7 @@ std::string CDomoticzInterface::GetIP(std::string& host)
 
 std::string CDomoticzInterface::BuildGetQuery(const std::string& host, const std::string& page)
 {
-	std::string query = "GET "+page+" HTTP/1.0\r\nHost: "+host+"\r\nUser-Agent: LCDPANEL\r\n\r\n";
+	std::string query = "GET "+page+" HTTP/1.0\r\nHost: "+host+"\r\nUser-Agent: CSERV\r\n\r\n";
 	return query;
 }
 

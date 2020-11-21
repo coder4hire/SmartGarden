@@ -85,6 +85,8 @@ void ConfigurePins()
 	pullUpDnControl(PINKEY_OK, PUD_UP);
 	pullUpDnControl(PINKEY_CANCEL, PUD_UP);
 	pullUpDnControl(PINKEY_ABORT, PUD_UP);
+	exportPin(11, INPUT);	// Abort key
+	setEdgeMode(11, INT_EDGE_BOTH);
 
 	//// GPIO Inputs
 	pinMode(PIN_IN1, INPUT);
