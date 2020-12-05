@@ -20,9 +20,10 @@ void CCommandsMenu::Paint()
 	PaintStatus();
 }
 
-void CCommandsMenu::OnNonPreciseTimer()
+bool CCommandsMenu::OnNonPreciseTimer()
 {
 	PaintStatus();
+	return true;
 }
 
 void CCommandsMenu::PaintStatus()

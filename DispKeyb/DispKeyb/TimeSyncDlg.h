@@ -1,18 +1,18 @@
 #pragma once
 #include "ScreenBase.h"
 
-class CMainScreen : public CScreenBase
+#define NTP_CHECK_INTERVAL_SEC 5
+
+class CTimeSyncDlg : public CScreenBase
 {
 public:
-	CMainScreen();
-	~CMainScreen();
-
+	CTimeSyncDlg();
 	virtual bool OnEnter();
 	virtual bool OnKeyPress(int key);
 	virtual void Paint();
 	virtual bool OnNonPreciseTimer();
 
-public:
+protected:
 	time_t oldTime;
+	time_t oldNtpCheckTime;
 };
-

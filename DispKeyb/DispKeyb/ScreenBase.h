@@ -14,14 +14,14 @@ enum EKeys
 class CScreenBase
 {
 public:
-	CScreenBase();
+	CScreenBase(bool isLCDSaverEnabled = true);
 	virtual ~CScreenBase();
 
 	virtual bool OnKeyPress(int key);
 	virtual void Run();
 	virtual void Paint() {};
 
-	virtual void OnNonPreciseTimer() {};
+	virtual bool OnNonPreciseTimer() { return true; };
 
 	virtual bool OnEnter() { Paint(); return true; }
 	virtual void OnLeave() {}
@@ -29,6 +29,7 @@ public:
 	int GetKey();
 
 	int TimerSkipCount;
+	bool IsLCDSaverEnabled = true;
 
 protected:
 	int timerCount;

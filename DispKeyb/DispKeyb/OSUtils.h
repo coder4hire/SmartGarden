@@ -8,4 +8,6 @@ namespace OSUtils
 
 	void CheckAndSpawnChildProcesses();
 	int GetProcIdByName(std::string procName);
+	bool IsSynchronizedWithNTP();
+	std::string Exec(const char* cmd);
 }

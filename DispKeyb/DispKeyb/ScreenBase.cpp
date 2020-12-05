@@ -4,10 +4,11 @@
 #include <unistd.h>
 #include <stdio.h>
 
-CScreenBase::CScreenBase(): lcd(CLcdDisplay::Inst)
+CScreenBase::CScreenBase(bool isLCDSaverEnabled): lcd(CLcdDisplay::Inst)
 {
 	TimerSkipCount = 5;
 	timerCount = TimerSkipCount;
+	this->IsLCDSaverEnabled = isLCDSaverEnabled;
 }
 
 
@@ -56,10 +57,17 @@ void CScreenBase::Run()
 		if (--timerCount <= 0)
 		{
 			timerCount = TimerSkipCount;
-			OnNonPreciseTimer();
+			if (!OnNonPreciseTimer())
+			{
+				OnLeave();
+				return;
+			}
 		}
 
-		lcd.CheckDisplayBacklight(false);
+		if (IsLCDSaverEnabled)
+		{
+			lcd.CheckDisplayBacklight(false);
+		}
 	}
 }
 

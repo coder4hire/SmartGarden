@@ -7,6 +7,7 @@
 #include "MainScreen.h"
 #include "PinsDefinitions.h"
 #include "HWInterface.h"
+#include "TimeSyncDlg.h"
 
 //unsigned int sleep(unsigned int seconds);
 
@@ -24,6 +25,9 @@ int main()
 	CLcdDisplay::Inst.InitDefault();
 	ConfigurePins();
 	CHWInterface::Inst.RestoreVolume();
+
+	CTimeSyncDlg dlg;
+	dlg.Run();
 
 	CMainScreen mainScreen;
 	mainScreen.Run();

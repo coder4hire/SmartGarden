@@ -76,6 +76,7 @@
     <ClCompile Include="RestartDlg.cpp" />
     <ClCompile Include="ScreenBase.cpp" />
     <ClCompile Include="SoundMenu.cpp" />
+    <ClCompile Include="TimeSyncDlg.cpp" />
     <ClCompile Include="WiFiConfigMenu.cpp" />
     <ClCompile Include="Wlan.cpp" />
   </ItemGroup>
@@ -100,6 +101,7 @@
     <ClInclude Include="NetworkSettings.h" />
     <ClInclude Include="ScreenBase.h" />
     <ClInclude Include="SoundMenu.h" />
+    <ClInclude Include="TimeSyncDlg.h" />
     <ClInclude Include="WiFiConfigMenu.h" />
     <ClInclude Include="Wlan.h" />
   </ItemGroup>

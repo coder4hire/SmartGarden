@@ -51,9 +51,10 @@ bool CMainScreen::OnKeyPress(int key)
 	return true;
 }
 
-void CMainScreen::OnNonPreciseTimer()
+bool CMainScreen::OnNonPreciseTimer()
 {
 	Paint();
+	return true;
 }
 
 void CMainScreen::Paint()
