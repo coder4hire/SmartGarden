@@ -30,6 +30,7 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 	if (packet.size() >= sizeof(PacketHeader))
 	{
 		const PacketHeader* header = (const PacketHeader*)packet.data();
+		printf("Header.Payload: %d PacketPayload: %d.\n",header->PayloadLength, packet.size() - sizeof(PacketHeader));
 		if (header->Preamble != 0xCA3217AD || strncmp(header->Pwd, HOST_PWD, sizeof(header->Pwd)-1))
 		{
 			printf("Wrong preamble/password. Closing.\n");

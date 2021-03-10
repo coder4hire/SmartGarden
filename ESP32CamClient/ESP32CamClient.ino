@@ -7,6 +7,7 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include "esp_timer.h"
+#include "lwip/sockets.h"
 #include "img_converters.h"
 #include "Arduino.h"
 #include "fb_gfx.h"
@@ -318,6 +319,7 @@ void reconnectIfNeeded()
 
 void loop()
 {
+	esp_wifi_set_ps(WIFI_PS_NONE);	
 	PacketHeader header = { 0xCA3217AD, HOST_PWD };
 	readDHTValues(header);
 
@@ -336,7 +338,7 @@ void loop()
 			return;
 		}
 
- 		client.setNoDelay(true);
+ 		//client.setNoDelay(true);
  		//client.setTimeout(WIFI_SOCKET_TIMEOUT);
 
 		powerOnCamera();
@@ -349,10 +351,11 @@ void loop()
 				header.PayloadLength = frame->len;
 				client.write((char*)&header, sizeof(header));
 				client.write(frame->buf, frame->len);
-				client.flush();
+				shutdown(client.fd(),SHUT_WR);
 				dbgPrintln("Packet is sent");
 			}
-			delay(5000);				
+			delay(10000);
+			close(client.fd());
 			client.stop();
 
 			freeFrame(frame);
@@ -374,6 +377,7 @@ void loop()
 			initCamera();
 		}
 		
+		close(client.fd());		
 		client.stop();
 	}
 	delay(5000);

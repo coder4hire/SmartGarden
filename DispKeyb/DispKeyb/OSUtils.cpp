@@ -70,7 +70,7 @@ void OSUtils::CheckAndSpawnChildProcesses()
 	if (GetProcIdByName("domoticz") == -1)
 	{
 		printf("Domoticz is not running, restarting it\n");
-		system("../domoticz/domoticz&");
+		system("../domoticz/domoticz& -sslwww443");
 	}
 
 }

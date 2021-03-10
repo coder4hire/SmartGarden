@@ -58,7 +58,7 @@ bool Server::Listen()
 
     while (!shouldStop)
     {
-        if (poll(fds, fds_len, 100) >= 0)
+        if (poll(fds, fds_len, 500) > 0)
         {
             // Checking incoming connection
             if (fds[0].revents == POLLIN)
@@ -78,7 +78,7 @@ bool Server::Listen()
                         }
                         else
                         {
-                            printf("Connection accepted\n");
+                            printf("Connection accepted (fd=%d)\n", client_socket);
                         }
                     }
                     else
@@ -92,7 +92,7 @@ bool Server::Listen()
             // Checking incoming data
             for (int i = 1; i < fds_len; i++)
             {
-                if (fds[i].revents == POLLIN)
+                if ((fds[i].revents & (POLLIN | POLLHUP | POLLERR)) && fds[i].fd)
                 {
                     std::map<int, ClientStream>::iterator stream_it = clientStreams.find(fds[i].fd);
                     if (stream_it != clientStreams.end())
@@ -110,7 +110,7 @@ bool Server::Listen()
                             }
                             else
                             {
-                                printf("Closed connection on socket %d (%d). Closing.\n\n", i, fds[i].fd);
+                                printf("Closed connection on socket %d (%d).\n\n", i, fds[i].fd);
                             }
                             // Close connection
                             
@@ -126,6 +126,7 @@ bool Server::Listen()
                                 clientStreams.erase(stream_it);
                                 close(fds[i].fd);
                                 fds[i].fd = 0;
+                                printf("Closed connection on socket %d (%d).\n\n", i, fds[i].fd);
                             }
                         }
                     }
