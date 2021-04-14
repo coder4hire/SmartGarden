@@ -12,6 +12,7 @@ public:
 	void SetAPMode();
 	void SetClientMode();
 	bool IsEnabled();
+	void ResetNetworking();
 
 	static CWlan Inst;
 

@@ -1,6 +1,7 @@
 #include "Wlan.h"
 
 #include <stdlib.h>
+#include <unistd.h>
 #include "OSUtils.h"
 
 CWlan CWlan::Inst;
@@ -32,11 +33,19 @@ void CWlan::SetAPMode()
 
 void CWlan::SetClientMode()
 {
+	system("service isc-dhcp-server stop");
 	system("nmcli c up wifi1");
 }
-
 
 bool CWlan::IsEnabled()
 {
 	return OSUtils::IsInterfaceOnline(MAIN_WLAN);
 }
+
+void CWlan::ResetNetworking()
+{
+	system("nmcli networking off");
+	sleep(1);
+	system("nmcli networking on");
+}
+
