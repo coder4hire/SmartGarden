@@ -21,7 +21,7 @@ public:
 	virtual void Run();
 	virtual void Paint() {};
 
-	virtual bool OnNonPreciseTimer() { return true; };
+	virtual bool OnNonPreciseTimer();
 
 	virtual bool OnEnter() { Paint(); return true; }
 	virtual void OnLeave() {}

@@ -1,6 +1,7 @@
 #include "ScreenBase.h"
 #include "wiringpi.h"
 #include "PinsDefinitions.h"
+#include "Wlan.h"
 #include <unistd.h>
 #include <stdio.h>
 
@@ -69,6 +70,12 @@ void CScreenBase::Run()
 			lcd.CheckDisplayBacklight(false);
 		}
 	}
+}
+
+bool CScreenBase::OnNonPreciseTimer()
+{
+	CWlan::Inst.BlinkWifi();
+	return true;
 }
 
 int CScreenBase::GetKey()

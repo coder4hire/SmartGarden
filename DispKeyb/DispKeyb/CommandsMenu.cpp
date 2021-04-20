@@ -23,7 +23,7 @@ void CCommandsMenu::Paint()
 bool CCommandsMenu::OnNonPreciseTimer()
 {
 	PaintStatus();
-	return true;
+	return CMenuBase::OnNonPreciseTimer();
 }
 
 void CCommandsMenu::PaintStatus()

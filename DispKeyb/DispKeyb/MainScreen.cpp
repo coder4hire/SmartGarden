@@ -54,7 +54,7 @@ bool CMainScreen::OnKeyPress(int key)
 bool CMainScreen::OnNonPreciseTimer()
 {
 	Paint();
-	return true;
+	return CScreenBase::OnNonPreciseTimer();
 }
 
 void CMainScreen::Paint()
@@ -71,10 +71,7 @@ void CMainScreen::Paint()
 		lcd.Printf(strTime);
 
 		lcd.GotoXY(0, 3);
-		lcd.Printf(CWlan::Inst.IsEnabled() ? "WiFi" : "----");
-
-		lcd.GotoXY(0, 3);
-		lcd.Printf(CWlan::Inst.IsEnabled() ? "WiFi" : "----");
+		lcd.Printf(CWlan::Inst.IsEnabled() ? "WiFi" : (CWlan::Inst.IsInterfaceEnabled() ? "WTmp" : "----"));
 
 		//--- Synchronized data
 		SensorsData data = CDomoticzDataParser::Inst.GetSensorsData();
