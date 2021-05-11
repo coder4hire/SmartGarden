@@ -5,6 +5,7 @@
 
 #include "DHT.h"
 #include "esp_camera.h"
+#include "esp_wifi.h"
 #include <WiFi.h>
 #include "esp_timer.h"
 #include "lwip/sockets.h"
@@ -17,8 +18,8 @@
 #include "PacketHeader.h"
 
 // Deep/Light sleep time in usec
-#define TIME_TO_SLEEP  (20*1000000)
-#define CAMSERVER_CONNECTION_RETRY_INTERVAL (10*1000000)
+#define TIME_TO_SLEEP  (3580ul*1000000ul)
+#define CAMSERVER_CONNECTION_RETRY_INTERVAL (10000ul)
 
 // WIFI reconnection time, in ms
 #define WIFI_RECONNECT_TIME 30000
@@ -235,41 +236,6 @@ void setup()
 
 	initCamera();	
 
-	// Wi-Fi connection
-	// digitalWrite(33, 0);
-	// while(WiFi.status() != WL_CONNECTED)
-	// {
-	// 	currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
-	// 	// Configures static IP address
-	// 	if (!WiFi.config(NetSettings[currentNetSetting].local_IP, NetSettings[currentNetSetting].gateway, subnet, primaryDNS, secondaryDNS))
-	// 	{
-	// 		dbgPrintln("STA Failed to configure");
-	// 		blinkNTimes(3);
-	// 		delay(2000);
-	// 		ESP.restart();
-	// 		return;
-	// 	}
-	// 	WiFi.begin(NetSettings[currentNetSetting].ssid, NetSettings[currentNetSetting].password);
-	
-	// 	int i = 0;
-	// 	for (i = 0; i < 60 && WiFi.status() != WL_CONNECTED; i++)
-	// 	{
-	// 		delay(500);
-	// 		dbgPrint(".");
-	// 	}
-
-	// 	if (i == 60)
-	// 	{
-	// 		WiFi.disconnect();
-	// 		digitalWrite(33, 1);
-	// 		delay(1000);
-	// 		digitalWrite(33, 0);
-	// 		dbgPrintf("\nReconnecting, settings %d\n",currentNetSetting);
-	// 	}
-	// }
-	// digitalWrite(33, 1);
-
-	// dbgPrintf("\nWiFi connected,settings %d\n",currentNetSetting);
 	digitalWrite(33, 1);
 
 	// Initializing DHT Sensor
@@ -321,7 +287,6 @@ void loop()
 {
 	esp_wifi_set_ps(WIFI_PS_NONE);	
 	PacketHeader header = { 0xCA3217AD, HOST_PWD };
-	readDHTValues(header);
 
 	reconnectIfNeeded();
 
@@ -332,15 +297,17 @@ void loop()
 		if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
 		{
 			dbgPrintln("Connection to CamServer failed.");
-			esp_sleep_enable_timer_wakeup(CAMSERVER_CONNECTION_RETRY_INTERVAL);
-			//esp_deep_sleep_start();
-			esp_light_sleep_start();
+			//esp_sleep_enable_timer_wakeup(CAMSERVER_CONNECTION_RETRY_INTERVAL*1000ul);
+			//esp_light_sleep_start();
+			delay(CAMSERVER_CONNECTION_RETRY_INTERVAL);
 			return;
 		}
 
  		//client.setNoDelay(true);
  		//client.setTimeout(WIFI_SOCKET_TIMEOUT);
 
+		readDHTValues(header);
+		
 		powerOnCamera();
 		camera_fb_t* frame = NULL;
 		if ((frame = captureFrame()) != NULL)
