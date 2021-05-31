@@ -16,9 +16,15 @@
 #include "soc/rtc_cntl_reg.h"  
 #include "esp_http_server.h"
 #include "PacketHeader.h"
+#include <EEPROM.h>
+
+//#define MANUAL_CONFIG_SWITCH 1
+
+#define BTN_PIN 0
 
 // Deep/Light sleep time in usec
-#define TIME_TO_SLEEP  (3580ul*1000000ul)
+//#define TIME_TO_SLEEP  (3580ul*1000000ul)
+#define TIME_TO_SLEEP  (1200ul*1000000ul)
 #define CAMSERVER_CONNECTION_RETRY_INTERVAL (10000ul)
 
 // WIFI reconnection time, in ms
@@ -36,7 +42,7 @@ struct NetSettingsStruct
 
 #include "pwd.h"
 
-int currentNetSetting=1; // Start looking from this settings preset
+uint8_t currentNetSetting=1; // Start looking from this settings preset
 int netSettingsNum = sizeof(NetSettings) / sizeof(NetSettingsStruct);
 
 #define PIXFORMAT_JPEG_CONVERTED ((pixformat_t)(PIXFORMAT_JPEG+0x10000))
@@ -45,6 +51,8 @@ bool isConnected=false;
 bool isCameraOn=false;
 
 DHT dht(13, DHT22);
+
+EEPROMClass eeprom;
 
 #if 1
 #define dbgPrint(x) Serial.print(x)
@@ -199,6 +207,7 @@ void initCamera()
 		ESP.restart();
 		return;
 	}
+	
 }
 
 void powerOnCamera()
@@ -210,13 +219,72 @@ void powerOnCamera()
 		delay(1000);
 	}
 }
+
 void powerOffCamera()
 {
-	//esp_camera_deinit();
 	digitalWrite(PWDN_GPIO_NUM, HIGH);
 	isCameraOn=false;
 }
 
+void startupConfig()
+{
+	// Configure button
+	pinMode(BTN_PIN,INPUT_PULLUP);
+
+	// Switching net config
+	blinkNTimes(1,1000);
+	blinkNTimes(1,300);
+	delay(700);
+	blinkNTimes(1,1000);
+	blinkNTimes(1,300);
+	delay(700);
+
+	// Changing net setting if needed
+	if(!digitalRead(BTN_PIN))
+	{
+		// Entered configuration mode
+		blinkNTimes(10,50);		
+		long millisStart = 0;
+		while(true)
+		{
+			if(!digitalRead(BTN_PIN))
+			{
+				if(!millisStart)
+				{
+					// Key pressed
+					millisStart = millis();
+				}
+				blinkNTimes(1,50);
+			}
+			else
+			{
+				delay(100);
+			}			
+
+			if(millisStart && digitalRead(BTN_PIN))
+			{
+				//Key released
+				long latency = millis() - millisStart;
+				millisStart = 0;
+				if(latency>1000)
+				{
+					// Long press
+					break;
+				}
+				else if(latency>100)
+				{
+					// Short press
+					delay(500);
+					currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
+					blinkNTimes(currentNetSetting+1,300);
+					dbgPrintf("WiFi config is switched manually,settings %d (%s)\n", currentNetSetting+1, NetSettings[currentNetSetting].ssid);
+					eeprom.write(0,currentNetSetting);
+					delay(500);
+				}
+			}
+		}
+	}
+}
 
 void setup()
 {
@@ -226,15 +294,26 @@ void setup()
 	// Configure status LED
 	pinMode(33, OUTPUT);
 
+	// Reading current net setting
+	currentNetSetting = eeprom.read(0);
+	dbgPrintf("NetSettingsNum read from EEPROM:%d\n",netSettingsNum);
+	if(currentNetSetting>=netSettingsNum)
+	{
+		dbgPrintln("Invalid netSettingsNum is read from EEPROM, resetting to 0");
+		currentNetSetting = 0;
+	}
+
+	Serial.begin(115200);
+	Serial.setDebugOutput(false);
+
+	startupConfig();
+
 	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
 	pinMode(PWDN_GPIO_NUM,OUTPUT);
 	powerOnCamera();
 
-	Serial.begin(115200);
-	Serial.setDebugOutput(false);
-
-	initCamera();	
+	lastTimeWifiChecked=0;
 
 	digitalWrite(33, 1);
 
@@ -251,11 +330,13 @@ void reconnectIfNeeded()
 		if (!lastTimeWifiChecked || 
 			now > (lastTimeWifiChecked + WIFI_RECONNECT_TIME) || now < lastTimeWifiChecked)
 		{
+			#ifndef MANUAL_CONFIG_SWITCH
 			if(!isConnected)
 			{
 				// If we successfully connected to some wifi before, let's retry same configuration again first
 				currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
 			}
+			#endif
 			dbgPrintf("\nReconnecting, settings %d\n", currentNetSetting+1);
 			
 			WiFi.disconnect();
@@ -307,41 +388,58 @@ void loop()
  		//client.setTimeout(WIFI_SOCKET_TIMEOUT);
 
 		readDHTValues(header);
-		
-		powerOnCamera();
-		camera_fb_t* frame = NULL;
-		if ((frame = captureFrame()) != NULL)
+
+		for(int retries=0; retries<5; retries++)
 		{
-			if (frame->len > 0)
+			initCamera();	
+			powerOnCamera();
+
+			// // Workaround for problem with receiving old frame twice
+			// camera_fb_t* frame = NULL;
+			// if (!(frame = captureFrame()))
+			// {
+			// 	esp_camera_deinit();
+			// 	initCamera();
+			// }
+			// else
+			// {
+			// 	freeFrame(frame);
+			// }
+
+			camera_fb_t* frame = NULL;
+			if ((frame = captureFrame()) != NULL)
 			{
-				dbgPrintf("Captured frame, size:%d\n", frame->len);
-				header.PayloadLength = frame->len;
-				client.write((char*)&header, sizeof(header));
-				client.write(frame->buf, frame->len);
-				shutdown(client.fd(),SHUT_WR);
-				dbgPrintln("Packet is sent");
+				if (frame->len > 0)
+				{
+					dbgPrintf("Captured frame, size:%d\n", frame->len);
+					header.PayloadLength = frame->len;
+					client.write((char*)&header, sizeof(header));
+					client.write(frame->buf, frame->len);
+					shutdown(client.fd(),SHUT_WR);
+					dbgPrintln("Packet is sent");
+				}
+				delay(10000);
+				close(client.fd());
+				client.stop();
+
+				freeFrame(frame);
+				powerOffCamera();
+				esp_camera_deinit();
+					
+				// Go to sleep after successfull transaction
+				dbgPrintln("Go to sleep...");
+				Serial.flush();
+
+				esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP);
+				//esp_deep_sleep_start();
+				int ret = esp_light_sleep_start();
+				dbgPrintf("Light sleep: %d\n",ret);
+				return;
 			}
-			delay(10000);
-			close(client.fd());
-			client.stop();
-
-			freeFrame(frame);
-			powerOffCamera();
-				
-			// Go to sleep after successfull transaction
-			dbgPrintln("Go to sleep...");
-			Serial.flush();
-
-			esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP);
-			//esp_deep_sleep_start();
-			int ret = esp_light_sleep_start();
-			dbgPrintf("Light sleep: %d\n",ret);
-			return;
-		}
-		else
-		{
-			esp_camera_deinit();
-			initCamera();
+			else
+			{
+				esp_camera_deinit();
+			}
 		}
 		
 		close(client.fd());		
