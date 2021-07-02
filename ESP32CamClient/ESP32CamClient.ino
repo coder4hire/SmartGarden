@@ -210,6 +210,12 @@ void initCamera()
 	
 }
 
+void deinitCamera()
+{
+	esp_camera_deinit();
+	gpio_uninstall_isr_service();
+}
+
 void powerOnCamera()
 {
 	if(!isCameraOn)
@@ -337,7 +343,7 @@ void reconnectIfNeeded()
 				currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
 			}
 			#endif
-			dbgPrintf("\nReconnecting, settings %d\n", currentNetSetting+1);
+			dbgPrintf("\nReconnecting, settings %d (%s)\n", currentNetSetting+1, NetSettings[currentNetSetting].ssid);
 			
 			WiFi.disconnect();
 			// Configures static IP address
@@ -358,7 +364,7 @@ void reconnectIfNeeded()
 	}
 	else if (!isConnected)
 	{
-		dbgPrintf("\nWiFi connected,settings %d\n",currentNetSetting+1);
+		dbgPrintf("\nWiFi connected,settings %d (%s)\n",currentNetSetting+1, NetSettings[currentNetSetting].ssid);
 		blinkNTimes(currentNetSetting+1,100);
 		isConnected=true;
 	}
@@ -366,7 +372,8 @@ void reconnectIfNeeded()
 
 void loop()
 {
-	esp_wifi_set_ps(WIFI_PS_NONE);	
+	esp_wifi_set_ps(WIFI_PS_NONE);
+	const char dummy[16]={};
 	PacketHeader header = { 0xCA3217AD, HOST_PWD };
 
 	reconnectIfNeeded();
@@ -398,7 +405,7 @@ void loop()
 			// camera_fb_t* frame = NULL;
 			// if (!(frame = captureFrame()))
 			// {
-			// 	esp_camera_deinit();
+			// 	deinitCamera();
 			// 	initCamera();
 			// }
 			// else
@@ -415,6 +422,8 @@ void loop()
 					header.PayloadLength = frame->len;
 					client.write((char*)&header, sizeof(header));
 					client.write(frame->buf, frame->len);
+					// Workaround - sending some junk to be sure that real data was dlivered
+					client.write(dummy,sizeof(dummy));
 					shutdown(client.fd(),SHUT_WR);
 					dbgPrintln("Packet is sent");
 				}
@@ -424,7 +433,7 @@ void loop()
 
 				freeFrame(frame);
 				powerOffCamera();
-				esp_camera_deinit();
+				deinitCamera();
 					
 				// Go to sleep after successfull transaction
 				dbgPrintln("Go to sleep...");
@@ -438,7 +447,7 @@ void loop()
 			}
 			else
 			{
-				esp_camera_deinit();
+				deinitCamera();
 			}
 		}
 		

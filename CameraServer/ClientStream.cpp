@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
+#include <unistd.h>
 
 #define SERVER_DATA
 #include "pwd.h"
@@ -14,6 +16,14 @@ CDomoticzInterface ClientStream::iface("127.0.0.1", 8080);
 
 void ClientStream::OnConnected()
 {
+	time(&openTime);
+}
+
+bool ClientStream::IsTimedOut()
+{
+	time_t now;
+	time(&now);
+	return !openTime || now - openTime < CONN_TIMEOUT_MS;
 }
 
 bool ClientStream::OnDataReceived(unsigned char* buf, int len)
@@ -30,7 +40,7 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 	if (packet.size() >= sizeof(PacketHeader))
 	{
 		const PacketHeader* header = (const PacketHeader*)packet.data();
-		printf("Header.Payload: %d PacketPayload: %d.\n",header->PayloadLength, packet.size() - sizeof(PacketHeader));
+		//printf("Header.Payload: %d PacketPayload: %d.\n",header->PayloadLength, packet.size() - sizeof(PacketHeader));
 		if (header->Preamble != 0xCA3217AD || strncmp(header->Pwd, HOST_PWD, sizeof(header->Pwd)-1))
 		{
 			printf("Wrong preamble/password. Closing.\n");
@@ -51,17 +61,23 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 				snprintf(fileName, 127, "/tmp/cam0/%02d.jpg", image_num);
 				image_num= (image_num+1) % MAX_IMAGES_NUM;
 				
-				FILE* fp = fopen(fileName, "wb");
+				FILE* fp;
+				for (int retr = 0; !(fp = fopen(fileName, "wb")) && retr < 10; retr++)
+				{
+					sleep(1);
+				}
 				if (fp)
 				{
 					printf("Saving image, len: %d\n", header->PayloadLength);
 					fwrite(&packet[sizeof(PacketHeader)], header->PayloadLength, 1, fp);
 					fclose(fp);
+					openTime = 0;
 					return false;
 				}
 				else
 				{
 					printf("Error opening file %s", fileName);
+					openTime = 0;
 					return false;
 				}
 			}

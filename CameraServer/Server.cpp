@@ -78,7 +78,7 @@ bool Server::Listen()
                         }
                         else
                         {
-                            printf("Connection accepted (fd=%d)\n", client_socket);
+                            //printf("Connection accepted (fd=%d)\n", client_socket);
                         }
                     }
                     else
@@ -136,6 +136,15 @@ bool Server::Listen()
             int shift = 0;
             for (int i = 1; i < fds_len; i++)
             {
+                // Closing sockets by timeout if needed
+                std::map<int, ClientStream>::iterator stream_it = clientStreams.find(fds[i].fd);
+                if (stream_it != clientStreams.end() && stream_it->second.IsTimedOut())
+                {
+                    printf("Socket %d (%d) is closed by timeout.\n\n", i, fds[i].fd);
+                    fds[i].fd = 0;
+                    close(stream_it->first);
+                }
+
                 if (!fds[i].fd)
                 {
                     shift++;
@@ -172,6 +181,7 @@ bool Server::AcceptConnection(int socket)
         fds[fds_len].fd = socket;
         fds[fds_len].events = POLLIN;
         clientStreams[socket] = ClientStream();
+        clientStreams[socket].OnConnected();
         fds_len++;
         return true;
     }
