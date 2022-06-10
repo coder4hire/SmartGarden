@@ -140,7 +140,7 @@ bool Server::Listen()
                 std::map<int, ClientStream>::iterator stream_it = clientStreams.find(fds[i].fd);
                 if (stream_it != clientStreams.end() && stream_it->second.IsTimedOut())
                 {
-                    printf("Socket %d (%d) is closed by timeout.\n\n", i, fds[i].fd);
+                    printf("Socket %d (%d) is closed by timeout (%s).\n\n", i, fds[i].fd, stream_it->second.GetRcvdInfo().c_str());
                     fds[i].fd = 0;
                     close(stream_it->first);
                 }

@@ -15,6 +15,7 @@ public:
 	bool OnDataReceived(unsigned char* buf, int len);
 	static int image_num;
 	time_t openTime=0;
+	std::string GetRcvdInfo();
 
 protected:
 	std::vector<unsigned char> packet;

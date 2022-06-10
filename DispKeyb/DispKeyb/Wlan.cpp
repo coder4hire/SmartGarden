@@ -5,6 +5,8 @@
 #include "OSUtils.h"
 #include "time.h"
 
+#include "LcdDisplay.h"
+
 CWlan CWlan::Inst;
 
 int CWlan::GetCurrentBlink()
@@ -27,17 +29,25 @@ std::string CWlan::GetWlanIP()
 	return OSUtils::GetIfaceIP(MAIN_WLAN);
 }
 
-void CWlan::Enable()
+bool CWlan::Enable()
 {
-	isWiFiEnabled = true;
-	EnableInterface();
+	if (EnableInterface())
+	{
+		isWiFiEnabled = true;
+		return true;
+	}
+	return false;
 }
 
-void CWlan::Disable()
+bool CWlan::Disable()
 {
-	isWiFiEnabled = false;
-	DisableInterface();
-	blinksCounter = GetCurrentBlink();
+	if (DisableInterface())
+	{
+		isWiFiEnabled = false;
+		blinksCounter = GetCurrentBlink();
+		return true;
+	}
+	return false;
 }
 
 bool CWlan::IsEnabled()
@@ -45,16 +55,16 @@ bool CWlan::IsEnabled()
 	return isWiFiEnabled;
 }
 
-void CWlan::EnableInterface()
+bool CWlan::EnableInterface()
 {
 	//system("ifconfig " MAIN_WLAN " up");
-	system("nmcli radio wifi on");
+	return system("nmcli radio wifi on") == 0;
 }
 
-void CWlan::DisableInterface()
+bool CWlan::DisableInterface()
 {
 	//system("ifconfig " MAIN_WLAN " down");
-	system("nmcli radio wifi off");
+	return system("nmcli radio wifi off") == 0;
 }
 
 bool CWlan::IsInterfaceEnabled()
@@ -62,50 +72,56 @@ bool CWlan::IsInterfaceEnabled()
 	return OSUtils::IsInterfaceOnline(MAIN_WLAN);
 }
 
-void CWlan::SetAPMode()
+bool CWlan::SetAPMode()
 {
-	system("nmcli c up AP");
-	system("service isc-dhcp-server start");
+	return system("nmcli c down wifi1;nmcli c up AP") == 0 &&
+		system("service isc-dhcp-server start") == 0;
 }
 
-void CWlan::SetClientMode()
+bool CWlan::SetClientMode()
 {
 	system("service isc-dhcp-server stop");
-	system("nmcli c up wifi1");
+	return system("nmcli c down AP;nmcli c up wifi1") == 0;
 }
 
 void CWlan::ResetNetworking()
 {
-	system("nmcli networking off");
+	system("nmcli networking off;systemctl stop systemd-resolved.service;resolvectl flush-caches;systemctl stop networking;systemctl stop NetworkManager");
 	sleep(1);
-	system("nmcli networking on");
+	system("systemctl start networking;systemctl start NetworkManager;nmcli networking on;ifup -a;systemctl start systemd-resolved.service") == 0;
 }
 
 void CWlan::BlinkWifi()
 {
+	// Temporary disabled for validation
+	// 
 	if (!IsEnabled())
 	{
-		int currentBlink = GetCurrentBlink();
-		if (!blinkStartTime)
-		{
-			// Enabling interface for short time, if needed
-			if (blinksCounter != currentBlink)
-			{
-				blinksCounter = currentBlink;
-				time(&blinkStartTime);
-				EnableInterface();
-			}
-		}
-		else
-		{
-			// Disabling interface if time is over
-			time_t now;
-			time(&now);
-			if (now - blinkStartTime > blinkDurationSec)
-			{
-				blinkStartTime = 0;
-				DisableInterface();
-			}
-		}
+		//TODO: Remove these 2 lines, they are for test purposes only
+		CLcdDisplay::Inst.GotoXY(18, 0);
+		CLcdDisplay::Inst.PutS("*");
+
+	//	int currentBlink = GetCurrentBlink();
+	//	if (!blinkStartTime)
+	//	{
+	//		// Enabling interface for short time, if needed
+	//		if (blinksCounter != currentBlink)
+	//		{
+	//			blinksCounter = currentBlink;
+	//			time(&blinkStartTime);
+	//			EnableInterface();
+	//		}
+	//	}
+	//	else
+	//	{
+	//		// Disabling interface if time is over
+	//		time_t now;
+	//		time(&now);
+	//		if (now - blinkStartTime > blinkDurationSec)
+	//		{
+	//			blinkStartTime = 0;
+	//			DisableInterface();
+	//		}
+	//	}
 	}
 }

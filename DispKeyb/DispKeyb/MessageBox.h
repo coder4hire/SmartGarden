@@ -3,19 +3,25 @@
 class CMessageBox :
 	public CScreenBase
 {
+	enum State
+	{
+		OK,
+		YES,
+		NO
+	};
 public:
 	CMessageBox();
 	~CMessageBox();
 
-	bool Show(const char* msg, CScreenBase* parent=NULL);
+	bool Show(const char* msg, CScreenBase* parent=NULL, bool askYesNo = true);
 	virtual bool OnKeyPress(int key);
 	virtual void Paint();
 
 	static CMessageBox Inst;
-	bool GetYesResult() { return isYes; }
+	bool GetYesResult() { return answer == YES; }
 
 protected:
 	const char* message;
-	bool isYes;
+	State answer;
 };
 

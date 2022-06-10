@@ -1,7 +1,8 @@
 #include "WiFiConfigMenu.h"
 #include "Wlan.h"
+#include "MessageBox.h"
 
-CWiFiConfigMenu::CWiFiConfigMenu(): CMenuBase(1)
+CWiFiConfigMenu::CWiFiConfigMenu() : CMenuBase(1)
 {
 	menuItems.push_back(CMenuItem("AP mode", NULL));
 	menuItems.push_back(CMenuItem("Client mode", NULL));
@@ -24,9 +25,17 @@ bool CWiFiConfigMenu::OnMenuItemSelected(int index)
 {
 	switch (index)
 	{
-	case 0: CWlan::Inst.SetAPMode();
+	case 0:
+		if (!CWlan::Inst.SetAPMode())
+		{
+			CMessageBox::Inst.Show("Can't enable AP", this, false);
+		}
 		break;
-	case 1: CWlan::Inst.SetClientMode();
+	case 1: 
+		if (!CWlan::Inst.SetClientMode())
+		{
+			CMessageBox::Inst.Show("Can't enable Client", this, false);
+		}
 		break;
 	case 2:
 		break;

@@ -18,13 +18,15 @@ bool CRestartDlg::OnMenuItemSelected(int index)
 		lcd.Clear();
 		lcd.GotoXY(4, 1);
 		lcd.PutS("Rebooting...");
-		system("reboot");
+		system("(sleep3;reboot 0)&");
+		exit(0);
 		return true;
 	case 1: // Shutdown
 		lcd.Clear();
 		lcd.GotoXY(2, 1);
 		lcd.PutS("Shutting down...");
-		system("shutdown 0");
+		system("(sleep3;shutdown 0)&");
+		exit(0);
 		return true;
 	}
 	return false;

@@ -85,3 +85,11 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 	}
 	return true;
 }
+
+std::string ClientStream::GetRcvdInfo()
+{
+	return "Rcvd:" + std::to_string(packet.size()) +
+		(packet.size() >= sizeof(PacketHeader) ?
+		std::string(" / Hdr payload:") + std::to_string(((const PacketHeader*)packet.data())->PayloadLength) :
+		std::string(" / No header received yet"));
+}

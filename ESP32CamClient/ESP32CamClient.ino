@@ -422,7 +422,7 @@ void loop()
 					header.PayloadLength = frame->len;
 					client.write((char*)&header, sizeof(header));
 					client.write(frame->buf, frame->len);
-					// Workaround - sending some junk to be sure that real data was dlivered
+					// Workaround - sending some junk to be sure that real data was delivered
 					client.write(dummy,sizeof(dummy));
 					shutdown(client.fd(),SHUT_WR);
 					dbgPrintln("Packet is sent");

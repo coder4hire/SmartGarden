@@ -7,14 +7,14 @@ class CWlan
 {
 public:
 	std::string GetWlanIP();
-	void Enable();
-	void Disable();
+	bool Enable();
+	bool Disable();
 	bool IsEnabled();
-	void EnableInterface();
-	void DisableInterface();
+	bool EnableInterface();
+	bool DisableInterface();
 	bool IsInterfaceEnabled();
-	void SetAPMode();
-	void SetClientMode();
+	bool SetAPMode();
+	bool SetClientMode();
 	void ResetNetworking();
 	void BlinkWifi();
 
@@ -22,8 +22,8 @@ public:
 
 protected:
 	bool isWiFiEnabled;
-	const int blinkDurationSec = 3600;
-	const int blinkIntervalSec = 180;
+	const int blinkDurationSec = 180;
+	const int blinkIntervalSec = 3600;
 	int blinksCounter;
 	time_t blinkStartTime;
 	int GetCurrentBlink();
