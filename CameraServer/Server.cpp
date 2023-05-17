@@ -122,6 +122,7 @@ bool Server::Listen()
                         {
                             if (!str.OnDataReceived(buffer, rc))
                             {
+                                send(fds[i].fd, "ACK", 3, 0);
                                 // Close connection if Data processing is over
                                 clientStreams.erase(stream_it);
                                 close(fds[i].fd);

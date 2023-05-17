@@ -15,16 +15,18 @@
 #include "soc/soc.h" 
 #include "soc/rtc_cntl_reg.h"  
 #include "esp_http_server.h"
+#include <esp_task_wdt.h>
 #include "PacketHeader.h"
 #include <EEPROM.h>
 
 //#define MANUAL_CONFIG_SWITCH 1
 
 #define BTN_PIN 0
+#define WDT_TIMEOUT 90
 
 // Deep/Light sleep time in usec
 //#define TIME_TO_SLEEP  (3580ul*1000000ul)
-#define TIME_TO_SLEEP  (1200ul*1000000ul)
+#define TIME_TO_SLEEP  (5ul*1000000ul)
 #define CAMSERVER_CONNECTION_RETRY_INTERVAL (10000ul)
 
 // WIFI reconnection time, in ms
@@ -192,8 +194,8 @@ void initCamera()
 	config.pin_reset = RESET_GPIO_NUM;
 	config.xclk_freq_hz = 20000000;
 	config.pixel_format = PIXFORMAT_JPEG;
-	config.frame_size = FRAMESIZE_UXGA;
-	config.jpeg_quality = 2;
+	config.frame_size = FRAMESIZE_SVGA;
+	config.jpeg_quality = 5;
 	config.fb_count = 2;
 
 	// Camera init
@@ -294,6 +296,10 @@ void startupConfig()
 
 void setup()
 {
+	// Watchdog
+	esp_task_wdt_init(WDT_TIMEOUT, true);
+	esp_task_wdt_add(NULL); 
+
 	// Set flash off
 	pinMode(4,INPUT_PULLDOWN);
 
@@ -373,23 +379,26 @@ void reconnectIfNeeded()
 void loop()
 {
 	esp_wifi_set_ps(WIFI_PS_NONE);
-	const char dummy[16]={};
+	const char dummy[32]={};
 	PacketHeader header = { 0xCA3217AD, HOST_PWD };
 
 	reconnectIfNeeded();
+	esp_task_wdt_reset();
 
 	//--- Sending image to server
 	if(isConnected)
 	{
 		WiFiClient client;
+		client.
 		if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
 		{
-			dbgPrintln("Connection to CamServer failed.");
+			dbgPrintf("Connection to CamServer failed (%s)\n",NetSettings[currentNetSetting].ssid);
 			//esp_sleep_enable_timer_wakeup(CAMSERVER_CONNECTION_RETRY_INTERVAL*1000ul);
 			//esp_light_sleep_start();
 			delay(CAMSERVER_CONNECTION_RETRY_INTERVAL);
 			return;
 		}
+		dbgPrintf("Connected to CamServer (%s)\n",NetSettings[currentNetSetting].ssid);
 
  		//client.setNoDelay(true);
  		//client.setTimeout(WIFI_SOCKET_TIMEOUT);
@@ -400,18 +409,6 @@ void loop()
 		{
 			initCamera();	
 			powerOnCamera();
-
-			// // Workaround for problem with receiving old frame twice
-			// camera_fb_t* frame = NULL;
-			// if (!(frame = captureFrame()))
-			// {
-			// 	deinitCamera();
-			// 	initCamera();
-			// }
-			// else
-			// {
-			// 	freeFrame(frame);
-			// }
 
 			camera_fb_t* frame = NULL;
 			if ((frame = captureFrame()) != NULL)
@@ -424,10 +421,29 @@ void loop()
 					client.write(frame->buf, frame->len);
 					// Workaround - sending some junk to be sure that real data was delivered
 					client.write(dummy,sizeof(dummy));
+					client.flush();
+					
+					for(int counter = 30; counter>=0; counter--)
+					{
+						esp_task_wdt_reset();
+						unsigned short buf=0;
+						dbgPrint(".");
+						if(client.available()>=2)
+						{
+							int bytesRead = client.read((uint8_t*)&buf,2);
+							dbgPrintf("Bytes read: %d, data:%x\n",bytesRead,buf);
+							if(buf==0x4B4F || bytesRead==-1)
+							{
+								blinkNTimes(2,150);
+								dbgPrintln("Acknowledged (OK)");
+								break;
+							}
+						}
+						delay(1000);
+					}
 					shutdown(client.fd(),SHUT_WR);
 					dbgPrintln("Packet is sent");
 				}
-				delay(10000);
 				close(client.fd());
 				client.stop();
 
