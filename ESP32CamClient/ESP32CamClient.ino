@@ -6,7 +6,6 @@
 #include "DHT.h"
 #include "esp_camera.h"
 #include "esp_wifi.h"
-#include <WiFi.h>
 #include "esp_timer.h"
 #include "lwip/sockets.h"
 #include "img_converters.h"
@@ -18,6 +17,7 @@
 #include <esp_task_wdt.h>
 #include "PacketHeader.h"
 #include <EEPROM.h>
+#include "WiFiClientExt.h"
 
 //#define MANUAL_CONFIG_SWITCH 1
 
@@ -86,7 +86,6 @@ IPAddress secondaryDNS(0, 0, 0, 0); //optional
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
-
 
 void blinkNTimes(int n, int interval=300)
 {
@@ -414,7 +413,7 @@ bool SendPhoto()
 
 	if(isConnected)
 	{
-		WiFiClient client;
+		WiFiClientExt client;
 		if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
 		{
 			dbgPrintf("Connection to CamServer failed (%s)\n",NetSettings[currentNetSetting].ssid);
@@ -443,27 +442,34 @@ bool SendPhoto()
 					dbgPrintf("(Retry %d) Captured frame, size:%d\n", retries, frame->len);
 					header.PayloadLength = frame->len;
 					size_t written=0;
-					if(client.write((char*)&header, sizeof(header))!=sizeof(header))
+//					if(client.write((char*)&header, sizeof(header))!=sizeof(header))
+					if(client.writeBlocking((uint8_t*)&header, sizeof(header))!=sizeof(header))
 					{
 						dbgPrintf("Can't write to socket (1), isConn:%d",(int)client.connected());
 						break;
 					}
-					for(unsigned int k=0; k<frame->len; k+=written)
+
+					if(client.writeBlocking(frame->buf, frame->len)<(size_t)frame->len)
 					{
-						unsigned int len = frame->len-k < 512 ? frame->len-k : 512;
-						if((written = client.write(frame->buf+k, len))!=len)
-						{
-							if(!client.connected())
-							{
-								dbgPrintf("Can't write to socket (2), isConn:%d",(int)client.connected());
-								break;
-							}
-							dbgPrintf("p%03d",written);
-						}
-						else {
-							dbgPrintf("s");
-						}
+						dbgPrintf("Can't write to socket (2), isConn:%d",(int)client.connected());
+						break;
 					}
+					// for(unsigned int k=0; k<frame->len; k+=written)
+					// {
+					// 	unsigned int len = frame->len-k < 512 ? frame->len-k : 512;
+					// 	if((written = client.write(frame->buf+k, len))!=len)
+					// 	{
+					// 		if(!client.connected())
+					// 		{
+					// 			dbgPrintf("Can't write to socket (2), isConn:%d",(int)client.connected());
+					// 			break;
+					// 		}
+					// 		dbgPrintf("p%03d",written);
+					// 	}
+					// 	else {
+					// 		dbgPrintf("s");
+					// 	}
+					// }
 					dbgPrintf("\n");
 
 					// Workaround - sending some junk to be sure that real data was delivered
@@ -490,11 +496,11 @@ bool SendPhoto()
 								break;
 							}
 						}
-						if(client.write(dummy,sizeof(dummy))!=sizeof(dummy))
-						{
-							dbgPrintf("Can't write to socket (4), isConn:%d",(int)client.connected());
-							break;
-						}
+						// if(client.write(dummy,sizeof(dummy))!=sizeof(dummy))
+						// {
+						// 	dbgPrintf("Can't write to socket (4), isConn:%d",(int)client.connected());
+						// 	break;
+						// }
 						
 						client.flush();
 						delay(300);
@@ -570,69 +576,4 @@ void loop()
 	}
 
 	delay(5000);
-}
-
-
-size_t writeData(WifiClient& client, const uint8_t *buf, size_t size) {
-  int res = 0;
-  int retry = WIFI_CLIENT_MAX_WRITE_RETRY;
-  int socketFileDescriptor = client.fd();
-  size_t totalBytesSent = 0;
-  size_t bytesRemaining = size;
-
-  if (!_connected || (socketFileDescriptor < 0)) {
-    return 0;
-  }
-
-  while (retry) {
-    //use select to make sure the socket is ready for writing
-    fd_set set;
-    struct timeval tv;
-    FD_ZERO(&set);                       // empties the set
-    FD_SET(socketFileDescriptor, &set);  // adds FD to the set
-    tv.tv_sec = 0;
-    tv.tv_usec = WIFI_CLIENT_SELECT_TIMEOUT_US;
-    retry--;
-
-    if (_lastWriteTimeout != _timeout) {
-      if (client.fd() >= 0) {
-        struct timeval timeout_tv;
-        timeout_tv.tv_sec = _timeout / 1000;
-        timeout_tv.tv_usec = (_timeout % 1000) * 1000;
-        if (setSocketOption(SO_SNDTIMEO, (char *)&timeout_tv, sizeof(struct timeval)) >= 0) {
-          _lastWriteTimeout = _timeout;
-        }
-      }
-    }
-
-    if (select(socketFileDescriptor + 1, NULL, &set, NULL, &tv) < 0) {
-      return 0;
-    }
-
-    if (FD_ISSET(socketFileDescriptor, &set)) {
-      res = send(socketFileDescriptor, (void *)buf, bytesRemaining, MSG_DONTWAIT);
-      if (res > 0) {
-        totalBytesSent += res;
-        if (totalBytesSent >= size) {
-          //completed successfully
-          retry = 0;
-        } else {
-          buf += res;
-          bytesRemaining -= res;
-          retry = WIFI_CLIENT_MAX_WRITE_RETRY;
-        }
-      } else if (res < 0) {
-        log_e("fail on fd %d, errno: %d, \"%s\"", client.fd(), errno, strerror(errno));
-        if (errno != EAGAIN) {
-          //if resource was busy, can try again, otherwise give up
-          stop();
-          res = 0;
-          retry = 0;
-        }
-      } else {
-        // Try again
-      }
-    }
-  }
-  return totalBytesSent;
 }
