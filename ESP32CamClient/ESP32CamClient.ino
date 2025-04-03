@@ -152,7 +152,7 @@ static void freeFrame(camera_fb_t* fb)
 
 void readDHTValues(PacketHeader& header)
 {
-	// Reading temperature or humidity takes about 2           50 milliseconds!
+	// Reading temperature or humidity takes about 250 milliseconds!
 	float h = NAN;
 	float t = NAN;
 	int retries = 10;
@@ -206,6 +206,7 @@ void initCamera()
 		dbgPrintf("Camera init failed with error 0x%x", err);
 		blinkNTimes(2);
 		delay(2000);
+		deinitCamera();
 		ESP.restart();
 		return;
 	}
@@ -237,8 +238,10 @@ void powerOffCamera()
 void startupConfig()
 {
 	// Configure button
+	pinMode(BTN_PIN,INPUT);
 	pinMode(BTN_PIN,INPUT_PULLUP);
-
+	digitalWrite(BTN_PIN,1);	
+    dbgPrintln(".1");
 	// Switching net config
 	blinkNTimes(1,1000);
 	blinkNTimes(1,300);
@@ -250,11 +253,14 @@ void startupConfig()
 	// Changing net setting if needed
 	if(!digitalRead(BTN_PIN))
 	{
+		dbgPrintln(".2");
 		// Entered configuration mode
 		blinkNTimes(10,50);		
 		long millisStart = 0;
 		while(true)
 		{
+			long latency = millis() - millisStart;
+
 			if(!digitalRead(BTN_PIN))
 			{
 				if(!millisStart)
@@ -262,33 +268,40 @@ void startupConfig()
 					// Key pressed
 					millisStart = millis();
 				}
+				dbgPrintln(".3");
 				blinkNTimes(1,50);
-			}
-			else
-			{
-				delay(100);
-			}			
 
-			if(millisStart && digitalRead(BTN_PIN))
+				if(latency>10000) // something gone wrong, normally button should not be pressed more than 10 seconds
+				{
+					dbgPrintln("Something gone wrong, BTN PIN has been stuck. Resetting...");
+					powerOffCamera();
+					deinitCamera();
+					ESP.restart();
+				}
+
+			}
+			else if(millisStart)
 			{
-				//Key released
-				long latency = millis() - millisStart;
-				millisStart = 0;
-				if(latency>1000)
-				{
-					// Long press
-					break;
-				}
-				else if(latency>100)
-				{
-					// Short press
-					delay(500);
-					currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
-					blinkNTimes(currentNetSetting+1,300);
-					dbgPrintf("WiFi config is switched manually,settings %d (%s)\n", currentNetSetting+1, NetSettings[currentNetSetting].ssid);
-					eeprom.write(0,currentNetSetting);
-					delay(500);
-				}
+				dbgPrintln(".4");
+				delay(100);
+
+			 	//Key released
+			 	millisStart = 0;
+			 	if(latency>1000)
+			 	{
+			 		// Long press
+			 		break;
+			 	}
+			// 	else if(latency>100)
+			// 	{
+			// 		// Short press
+			// 		delay(500);
+			// 		currentNetSetting = (currentNetSetting + 1) % netSettingsNum;
+			// 		blinkNTimes(currentNetSetting+1,300);
+			// 		dbgPrintf("WiFi config is switched manually,settings %d (%s)\n", currentNetSetting+1, NetSettings[currentNetSetting].ssid);
+			// 		eeprom.write(0,currentNetSetting);
+			// 		delay(500);
+			//	}
 			}
 		}
 	}
@@ -299,6 +312,17 @@ void setup()
 	// Watchdog
 	esp_task_wdt_init(WDT_TIMEOUT, true);
 	esp_task_wdt_add(NULL); 
+
+	Serial.begin(115200);
+	Serial.setDebugOutput(false);
+ 	for(int i=0; i<20 && !Serial; i++)
+	{
+		delay(100);
+	}
+	dbgPrintln("----- Start ------");
+	
+	esp_wifi_start();
+	isConnected=true;
 
 	// Set flash off
 	pinMode(4,INPUT_PULLDOWN);
@@ -315,18 +339,20 @@ void setup()
 		currentNetSetting = 0;
 	}
 
-	Serial.begin(115200);
-	Serial.setDebugOutput(false);
-
+	dbgPrintln("Init 1");
 	startupConfig();
-
+	dbgPrintln("Init 2");
 	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
+	dbgPrintln("Init 3");
 	pinMode(PWDN_GPIO_NUM,OUTPUT);
+	dbgPrintln("Init 4");
 	powerOnCamera();
 
+	dbgPrintln("Init 5");
 	lastTimeWifiChecked=0;
 
+	dbgPrintln("Init 6");
 	digitalWrite(33, 1);
 
 	// Initializing DHT Sensor
@@ -372,31 +398,30 @@ void reconnectIfNeeded()
 	{
 		dbgPrintf("\nWiFi connected,settings %d (%s)\n",currentNetSetting+1, NetSettings[currentNetSetting].ssid);
 		blinkNTimes(currentNetSetting+1,100);
+		if(eeprom.read(0)!=currentNetSetting)
+		{
+			dbgPrintf("Storing new default connection (%d: %s) to EEPROM\n",currentNetSetting,NetSettings[currentNetSetting].ssid);
+			eeprom.write(0,currentNetSetting);
+		}
 		isConnected=true;
 	}
 }
 
-void loop()
+bool SendPhoto()
 {
-	esp_wifi_set_ps(WIFI_PS_NONE);
 	const char dummy[32]={};
 	PacketHeader header = { 0xCA3217AD, HOST_PWD };
 
-	reconnectIfNeeded();
-	esp_task_wdt_reset();
-
-	//--- Sending image to server
 	if(isConnected)
 	{
 		WiFiClient client;
-		client.
 		if (!client.connect(NetSettings[currentNetSetting].serverHost, port)) 
 		{
 			dbgPrintf("Connection to CamServer failed (%s)\n",NetSettings[currentNetSetting].ssid);
 			//esp_sleep_enable_timer_wakeup(CAMSERVER_CONNECTION_RETRY_INTERVAL*1000ul);
 			//esp_light_sleep_start();
 			delay(CAMSERVER_CONNECTION_RETRY_INTERVAL);
-			return;
+			return false;
 		}
 		dbgPrintf("Connected to CamServer (%s)\n",NetSettings[currentNetSetting].ssid);
 
@@ -415,22 +440,48 @@ void loop()
 			{
 				if (frame->len > 0)
 				{
-					dbgPrintf("Captured frame, size:%d\n", frame->len);
+					dbgPrintf("(Retry %d) Captured frame, size:%d\n", retries, frame->len);
 					header.PayloadLength = frame->len;
-					client.write((char*)&header, sizeof(header));
-					client.write(frame->buf, frame->len);
+					size_t written=0;
+					if(client.write((char*)&header, sizeof(header))!=sizeof(header))
+					{
+						dbgPrintf("Can't write to socket (1), isConn:%d",(int)client.connected());
+						break;
+					}
+					for(unsigned int k=0; k<frame->len; k+=written)
+					{
+						unsigned int len = frame->len-k < 512 ? frame->len-k : 512;
+						if((written = client.write(frame->buf+k, len))!=len)
+						{
+							if(!client.connected())
+							{
+								dbgPrintf("Can't write to socket (2), isConn:%d",(int)client.connected());
+								break;
+							}
+							dbgPrintf("p%03d",written);
+						}
+						else {
+							dbgPrintf("s");
+						}
+					}
+					dbgPrintf("\n");
+
 					// Workaround - sending some junk to be sure that real data was delivered
-					client.write(dummy,sizeof(dummy));
+					if(client.write(dummy,sizeof(dummy))!=sizeof(dummy))
+					{
+						dbgPrintf("Can't write to socket (3), isConn:%d",(int)client.connected());
+						break;
+					}
 					client.flush();
-					
-					for(int counter = 30; counter>=0; counter--)
+					int counter = 45;
+					for(; counter>=0; counter--)
 					{
 						esp_task_wdt_reset();
 						unsigned short buf=0;
-						dbgPrint(".");
+						dbgPrint("-");
 						if(client.available()>=2)
 						{
-							int bytesRead = client.read((uint8_t*)&buf,2);
+							int bytesRead = client.readBytes((uint8_t*)&buf,2);
 							dbgPrintf("Bytes read: %d, data:%x\n",bytesRead,buf);
 							if(buf==0x4B4F || bytesRead==-1)
 							{
@@ -439,8 +490,25 @@ void loop()
 								break;
 							}
 						}
-						delay(1000);
+						if(client.write(dummy,sizeof(dummy))!=sizeof(dummy))
+						{
+							dbgPrintf("Can't write to socket (4), isConn:%d",(int)client.connected());
+							break;
+						}
+						
+						client.flush();
+						delay(300);
 					}
+
+					if(counter==-1)
+					{
+						freeFrame(frame);
+						powerOffCamera();
+						deinitCamera();
+						break;
+					}
+
+					client.flush();
 					shutdown(client.fd(),SHUT_WR);
 					dbgPrintln("Packet is sent");
 				}
@@ -450,16 +518,7 @@ void loop()
 				freeFrame(frame);
 				powerOffCamera();
 				deinitCamera();
-					
-				// Go to sleep after successfull transaction
-				dbgPrintln("Go to sleep...");
-				Serial.flush();
-
-				esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP);
-				//esp_deep_sleep_start();
-				int ret = esp_light_sleep_start();
-				dbgPrintf("Light sleep: %d\n",ret);
-				return;
+				return true;
 			}
 			else
 			{
@@ -470,5 +529,110 @@ void loop()
 		close(client.fd());		
 		client.stop();
 	}
+	return false;
+}
+
+
+void loop()
+{
+	dbgPrintln("L 1");
+	esp_wifi_set_ps(WIFI_PS_NONE);
+
+	dbgPrintln("L 2");
+	reconnectIfNeeded();
+	dbgPrintln("L 3");
+	esp_task_wdt_reset();
+
+	dbgPrintln("L 4");
+	//--- Sending image to server
+	if(SendPhoto())
+	{
+		WiFi.disconnect();
+
+		esp_wifi_stop();
+		esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP);
+
+		// Go to sleep after successfull transaction
+		dbgPrintln("Go to sleep...");
+		Serial.flush();
+
+		//esp_deep_sleep_start();
+		int ret = esp_light_sleep_start();
+		//dbgPrintf("Light sleep: %d\n",ret);
+		dbgPrintln("----- Wakeup, Neo ------");
+
+		// Configure button
+		pinMode(BTN_PIN,INPUT_PULLUP);
+		esp_wifi_start();
+		isConnected=true;		
+		lastTimeWifiChecked = 0;
+		return;						
+	}
+
 	delay(5000);
+}
+
+
+size_t writeData(WifiClient& client, const uint8_t *buf, size_t size) {
+  int res = 0;
+  int retry = WIFI_CLIENT_MAX_WRITE_RETRY;
+  int socketFileDescriptor = client.fd();
+  size_t totalBytesSent = 0;
+  size_t bytesRemaining = size;
+
+  if (!_connected || (socketFileDescriptor < 0)) {
+    return 0;
+  }
+
+  while (retry) {
+    //use select to make sure the socket is ready for writing
+    fd_set set;
+    struct timeval tv;
+    FD_ZERO(&set);                       // empties the set
+    FD_SET(socketFileDescriptor, &set);  // adds FD to the set
+    tv.tv_sec = 0;
+    tv.tv_usec = WIFI_CLIENT_SELECT_TIMEOUT_US;
+    retry--;
+
+    if (_lastWriteTimeout != _timeout) {
+      if (client.fd() >= 0) {
+        struct timeval timeout_tv;
+        timeout_tv.tv_sec = _timeout / 1000;
+        timeout_tv.tv_usec = (_timeout % 1000) * 1000;
+        if (setSocketOption(SO_SNDTIMEO, (char *)&timeout_tv, sizeof(struct timeval)) >= 0) {
+          _lastWriteTimeout = _timeout;
+        }
+      }
+    }
+
+    if (select(socketFileDescriptor + 1, NULL, &set, NULL, &tv) < 0) {
+      return 0;
+    }
+
+    if (FD_ISSET(socketFileDescriptor, &set)) {
+      res = send(socketFileDescriptor, (void *)buf, bytesRemaining, MSG_DONTWAIT);
+      if (res > 0) {
+        totalBytesSent += res;
+        if (totalBytesSent >= size) {
+          //completed successfully
+          retry = 0;
+        } else {
+          buf += res;
+          bytesRemaining -= res;
+          retry = WIFI_CLIENT_MAX_WRITE_RETRY;
+        }
+      } else if (res < 0) {
+        log_e("fail on fd %d, errno: %d, \"%s\"", client.fd(), errno, strerror(errno));
+        if (errno != EAGAIN) {
+          //if resource was busy, can try again, otherwise give up
+          stop();
+          res = 0;
+          retry = 0;
+        }
+      } else {
+        // Try again
+      }
+    }
+  }
+  return totalBytesSent;
 }
