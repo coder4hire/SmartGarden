@@ -5,7 +5,7 @@
 
 #define MAX_PACKET_SIZE (5*1024*1024)
 #define MAX_IMAGES_NUM 10
-#define CONN_TIMEOUT_MS 180000ul
+#define CONN_TIMEOUT_S 180ul
 
 class ClientStream
 {

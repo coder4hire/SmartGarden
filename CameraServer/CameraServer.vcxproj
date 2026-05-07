@@ -71,6 +71,7 @@
   <ItemGroup>
     <ClInclude Include="..\ESP32CamClient\PacketHeader.h" />
     <ClInclude Include="ClientStream.h" />
+    <ClInclude Include="DbgOut.h" />
     <ClInclude Include="DomoticzInterface.h" />
     <ClInclude Include="Server.h" />
   </ItemGroup>

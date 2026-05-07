@@ -18,7 +18,7 @@ bool setEdgeMode(int pin, int mode);
 
 int main()
 {
-	CDomoticzInterface iDM("192.168.2.50",8080);
+	CDomoticzInterface iDM("127.0.0.1",8080);
 
 	wiringPiSetup();
 	printf("Wiring initialized\n");

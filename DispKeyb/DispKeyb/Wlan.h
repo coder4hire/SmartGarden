@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
 
-#define MAIN_WLAN "wlx000b81a27273"
+//#define MAIN_WLAN "wlx000b81a27273"
+#define MAIN_WLAN "wlan0"
 
 class CWlan
 {

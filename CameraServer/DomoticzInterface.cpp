@@ -4,6 +4,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+#include "secret\auth.h"
+#include "DbgOut.h"
 
 CDomoticzInterface::CDomoticzInterface(const char* domoticzIP, unsigned short port)
 {
@@ -49,7 +51,7 @@ bool CDomoticzInterface::SendHumidity(int idx, int hum)
 	std::string resp = SendHTTPRequest(str);
 	if (resp.find("\"status\" : \"OK\"") == -1)
 	{
-		printf("%s", resp.c_str());
+		errPrintf("Error while sending Humidity: %s", resp.c_str());
 		return false;
 	}
 
@@ -64,15 +66,20 @@ bool CDomoticzInterface::SendTempHumidity(int idx, int temp, int hum)
 	str += "&nvalue=0&svalue=";
 	str += std::to_string(temp)+";"+ std::to_string(hum)+";"+ std::to_string(Hum2Status(hum));
 
-	// TODO: Process response
-	std::string resp = SendHTTPRequest(str);
-	if (resp.find("\"status\" : \"OK\"") == -1)
+	for (int i = 0; i < 5; i++)
 	{
-		printf("%s", resp.c_str());
-		return false;
+		std::string resp = SendHTTPRequest(str);
+		if (resp.find("\"status\" : \"OK\"") == -1)
+		{
+			errPrintf("Error while sending TempHum:\n%s\n", resp.c_str());
+		}
+		else
+		{
+			return true;
+		}
 	}
 
-	return true;
+	return false;
 }
 
 std::string CDomoticzInterface::SendHTTPRequest(std::string& request)
@@ -99,7 +106,7 @@ std::string CDomoticzInterface::SendHTTPRequest(std::string& request)
 	}
 	
 	std::string getQuery = BuildGetQuery(domoticzIP, request);
-	printf("%s", getQuery.c_str());
+	//printf("%s", getQuery.c_str());
 
 	//Send the query to the server
 	int sent = 0;
@@ -155,7 +162,7 @@ std::string CDomoticzInterface::GetIP(std::string& host)
 
 std::string CDomoticzInterface::BuildGetQuery(const std::string& host, const std::string& page)
 {
-	std::string query = "GET "+page+" HTTP/1.0\r\nHost: "+host+"\r\nUser-Agent: CSERV\r\n\r\n";
+	std::string query = "GET "+page+" HTTP/1.0\r\nHost: "+host+"\r\nAuthorization: Basic "+BASIC_AUTH+"\r\nUser-Agent: CSERV\r\n\r\n";
 	return query;
 }
 

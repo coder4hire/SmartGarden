@@ -10,3 +10,9 @@
 /ESP32Cam/pwd.h
 /ESP32CamClient/pwd.h
 */__vm
+*/secret/
+etc
+/!SD_BKP
+/Hardware/*.txt
+/Hardware/Lib
+/!Sim

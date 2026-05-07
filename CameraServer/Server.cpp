@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "DbgOut.h"
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <memory.h>
@@ -73,17 +74,17 @@ bool Server::Listen()
                     {
                         if (!AcceptConnection(client_socket))
                         {
-                            printf("Connection rejected: no free client sockets\n");
+                            errPrintf("Connection rejected: no free client sockets\n");
                             close(client_socket);
                         }
                         else
                         {
-                            //printf("Connection accepted (fd=%d)\n", client_socket);
+                            dbgPrintf("Connection accepted (fd=%d)\n", client_socket);
                         }
                     }
                     else
                     {
-                        printf("Connection rejected\n");
+                        errPrintf("Connection rejected\n");
                         close(client_socket);
                     }
                 }
@@ -101,16 +102,15 @@ bool Server::Listen()
                         unsigned char buffer[128 * 1024];
 
                         int rc = recv(fds[i].fd, buffer,128*1024, 0);
-                        //printf("\nGot packet:%d\n", rc);
                         if (rc <= 0)
                         {
                             if (rc < 0)
                             {
-                                printf("*** Error on socket %d (%d). Closing.\n\n", i, fds[i].fd);
+                                errPrintf("*** Error on socket %d (%d). Closing.\n\n", i, fds[i].fd);
                             }
                             else
                             {
-                                printf("Closed connection on socket %d (%d).\n\n", i, fds[i].fd);
+                                dbgPrintf("Closed connection on socket %d (%d).\n\n", i, fds[i].fd);
                             }
                             // Close connection
                             
@@ -122,12 +122,16 @@ bool Server::Listen()
                         {
                             if (!str.OnDataReceived(buffer, rc))
                             {
-                                send(fds[i].fd, "ACK", 3, 0);
+                                for (int j = 0; j < 32; j++)
+                                {
+                                    send(fds[i].fd, "OK", 2 , 0);
+                                }
+                                sleep(5);
                                 // Close connection if Data processing is over
                                 clientStreams.erase(stream_it);
                                 close(fds[i].fd);
                                 fds[i].fd = 0;
-                                printf("Closed connection on socket %d (%d).\n\n", i, fds[i].fd);
+                                dbgPrintf("Closed connection on socket %d (%d).\n\n", i, fds[i].fd);
                             }
                         }
                     }
@@ -141,7 +145,7 @@ bool Server::Listen()
                 std::map<int, ClientStream>::iterator stream_it = clientStreams.find(fds[i].fd);
                 if (stream_it != clientStreams.end() && stream_it->second.IsTimedOut())
                 {
-                    printf("Socket %d (%d) is closed by timeout (%s).\n\n", i, fds[i].fd, stream_it->second.GetRcvdInfo().c_str());
+                    dbgPrintf("Socket %d (%d) is closed by timeout (%s).\n\n", i, fds[i].fd, stream_it->second.GetRcvdInfo().c_str());
                     fds[i].fd = 0;
                     close(stream_it->first);
                 }

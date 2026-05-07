@@ -70,6 +70,8 @@ void noprintf(char* str, ...) {}
 IPAddress primaryDNS(0, 0, 0, 0);   //optional
 IPAddress secondaryDNS(0, 0, 0, 0); //optional
 
+camera_config_t config;
+
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -172,7 +174,6 @@ void initCamera()
 {
 	digitalWrite(PWDN_GPIO_NUM,0);
 
-	camera_config_t config;
 	config.ledc_channel = LEDC_CHANNEL_0;
 	config.ledc_timer = LEDC_TIMER_0;
 	config.pin_d0 = Y2_GPIO_NUM;
@@ -193,8 +194,8 @@ void initCamera()
 	config.pin_reset = RESET_GPIO_NUM;
 	config.xclk_freq_hz = 20000000;
 	config.pixel_format = PIXFORMAT_JPEG;
-	config.frame_size = FRAMESIZE_SVGA;
-	config.jpeg_quality = 5;
+	config.frame_size = FRAMESIZE_SXGA; //FRAMESIZE_SVGA
+	config.jpeg_quality = 12;  //0...63 Lower is better
 	config.fb_count = 2;
 
 	// Camera init
@@ -209,7 +210,36 @@ void initCamera()
 		ESP.restart();
 		return;
 	}
-	
+
+	// start: fix for dark green/blue issue
+	sensor_t *s = esp_camera_sensor_get();
+	s->set_brightness(s, 0);
+	s->set_contrast(s, 0);
+	s->set_saturation(s, 0);
+	s->set_special_effect(s, 0);
+	s->set_wb_mode(s, 3);
+	s->set_ae_level(s, 0);
+	s->set_awb_gain(s, 1);
+	s->set_wb_mode(s, 3); // 0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home
+	s->set_aec_value(s, 400); // the brighter your scene the lower this value should be (0-1200)
+	s->set_agc_gain(s, 2);
+	s->set_gainceiling(s, GAINCEILING_4X);
+	s->set_lenc(s, true);
+	s->set_gain_ctrl(s, false);
+	s->set_exposure_ctrl(s, false);
+	s->set_hmirror(s, false);
+	s->set_vflip(s, false);
+	s->set_aec2(s, true);
+	s->set_bpc(s, true);
+	s->set_wpc(s, true);
+  	// end: fix for dark green/blue issue
+
+  	camera_fb_t *fb = captureFrame();
+	freeFrame(fb);
+
+	s->set_wb_mode(s, 0);
+    s->set_gain_ctrl(s, 1);                 // Auto gain on
+    s->set_exposure_ctrl(s, 1);             // Auto exposure on	
 }
 
 void deinitCamera()

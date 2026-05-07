@@ -1,5 +1,6 @@
 #include "ClientStream.h"
 #include "PacketHeader.h"
+#include "DbgOut.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -23,7 +24,7 @@ bool ClientStream::IsTimedOut()
 {
 	time_t now;
 	time(&now);
-	return !openTime || now - openTime < CONN_TIMEOUT_MS;
+	return !openTime || now - openTime > CONN_TIMEOUT_S;
 }
 
 bool ClientStream::OnDataReceived(unsigned char* buf, int len)
@@ -33,20 +34,20 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 
 	if (packet.size() > MAX_PACKET_SIZE)
 	{
-		printf("Too large packet:%d\n", packet.size());
+		dbgPrintf("Too large packet:%d\n", packet.size());
 		return false;
 	}
 
 	if (packet.size() >= sizeof(PacketHeader))
 	{
 		const PacketHeader* header = (const PacketHeader*)packet.data();
-		//printf("Header.Payload: %d PacketPayload: %d.\n",header->PayloadLength, packet.size() - sizeof(PacketHeader));
+		dbgPrintf("Header.Payload: %d PacketPayload: %d.\n",header->PayloadLength, packet.size() - sizeof(PacketHeader));
 		if (header->Preamble != 0xCA3217AD || strncmp(header->Pwd, HOST_PWD, sizeof(header->Pwd)-1))
 		{
-			printf("Wrong preamble/password. Closing.\n");
+			errPrintf("Wrong preamble/password. Closing.\n");
 			return false;
 		}
-		else if (packet.size() - sizeof(PacketHeader) >= header->PayloadLength )
+		else if (packet.size() >= header->PayloadLength + sizeof(PacketHeader))
 		{
 			//---  Sending Temperature/Humidity
 			if (!isnan(header->Temperature) && !isnan(header->Humidity))
@@ -68,7 +69,7 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 				}
 				if (fp)
 				{
-					printf("Saving image, len: %d\n", header->PayloadLength);
+					dbgPrintf("Saving image, len: %d\n", header->PayloadLength);
 					fwrite(&packet[sizeof(PacketHeader)], header->PayloadLength, 1, fp);
 					fclose(fp);
 					openTime = 0;
@@ -76,7 +77,7 @@ bool ClientStream::OnDataReceived(unsigned char* buf, int len)
 				}
 				else
 				{
-					printf("Error opening file %s", fileName);
+					errPrintf("Error opening file %s\n", fileName);
 					openTime = 0;
 					return false;
 				}
